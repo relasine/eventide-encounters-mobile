@@ -1,80 +1,61 @@
 import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text} from 'react-native';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { useState } from 'react';
+
+import { Forsaken } from '../../components/content/Forsaken';
+import { Behemoth } from '../../components/content/Behemoth';
+import { Peril } from '../../components/content/Peril';
+import { Event } from '../../components/content/Event';
+import { BehemothDungeon, GeneratedDungeon, EnemyDungeon, EventDungeon, PerilDungeon } from '@/constants/types';
+import { Horde } from '../../components/content/Horde';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const [encounter, setEncounter] = useState<GeneratedDungeon | null>(null);
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  const generateDungeon = async () => {
+    setEncounter(null);
+    const response = await fetch('http://localhost:3001/api/v1/dungeon/sundessa');
+    const data = await response.json();
+    setEncounter(data);
+
+    if (data.roomType === 'Event') {
+      console.log(data.event);
+    }
+  }
+  
+  return (
+    <View style={{ flex: 1, paddingTop: 100, paddingHorizontal: 20, alignItems: 'center' }}>
+      <TouchableOpacity style={styles.dungeonButton} onPress={generateDungeon}><Text>Generate Dungeon</Text></TouchableOpacity>
+      {encounter &&(
+        <View style={{alignItems: 'center', justifyContent: 'center'}}>
+          <Image
+            source={encounter.image}
+            style={{ width: 200, height: 125, alignSelf: 'center', marginVertical: 20 }}
+          />
+          <Text>Roll: {encounter.dungeonNumber}</Text>
+          <Text>Encounter Type: {encounter.roomType}</Text>
+          <Text>{encounter.roomSubtype}</Text>
+          <View style={{ paddingVertical: 20 }}>
+            {encounter.roomType === 'Combat' && encounter.roomSubtype === 'Behemoth' ? (
+              <Behemoth encounter={(encounter as BehemothDungeon).enemy} />
+            ) : null}
+            {encounter.roomType === 'Combat' && encounter.roomSubtype === 'Forsaken' ? (
+              <Forsaken encounter={(encounter as EnemyDungeon).enemy} />
+            ) : null}
+            {encounter.roomType === 'Combat' && encounter.roomSubtype === 'Ambush' ? (
+              <Horde encounter={(encounter as EnemyDungeon).enemy} />
+            ) : null}
+            {encounter.roomType === 'Event' && 'event' in encounter && (encounter as EventDungeon).event?.action ? (
+              <Event encounter={(encounter as EventDungeon).event} />
+            ) : null}
+            {encounter.roomType === 'Peril & Altar' && encounter.roomSubtype === null ? (
+              <Peril encounter={(encounter as PerilDungeon).peril} />
+            ) : null}
+          </View>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -95,4 +76,11 @@ const styles = StyleSheet.create({
     left: 0,
     position: 'absolute',
   },
+  dungeonButton: {
+    borderColor: 'black',
+    borderWidth: 1,
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
+  }
 });
