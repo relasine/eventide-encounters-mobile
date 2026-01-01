@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
+import { useRegion } from '@/contexts/RegionContext';
 
 export default function SearchScreen() {
+    const { region } = useRegion();
     const [searchResults, setSearchResults] = useState<any | null>(null);
 
     const search = async () => {
         setSearchResults(null);
 
         try {
-            const response = await fetch('http://localhost:3001/api/v1/search/sundessa');
+            const response = await fetch(`http://localhost:3001/api/v1/search/${region}`);
             const data = await response.json();
             setSearchResults(data.search);
         } catch (error) {

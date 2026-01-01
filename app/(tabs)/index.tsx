@@ -9,13 +9,15 @@ import { Peril } from '../../components/content/Peril';
 import { Event } from '../../components/content/Event';
 import { BehemothDungeon, GeneratedDungeon, EnemyDungeon, EventDungeon, PerilDungeon } from '@/constants/types';
 import { Horde } from '../../components/content/Horde';
+import { useRegion } from '@/contexts/RegionContext';
 
 export default function HomeScreen() {
+  const { region } = useRegion();
   const [encounter, setEncounter] = useState<GeneratedDungeon | null>(null);
 
   const generateDungeon = async () => {
     setEncounter(null);
-    const response = await fetch('http://localhost:3001/api/v1/dungeon/sundessa');
+    const response = await fetch(`http://localhost:3001/api/v1/dungeon/${region}`);
     const data = await response.json();
     setEncounter(data);
 

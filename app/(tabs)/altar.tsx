@@ -6,14 +6,16 @@ import { Behemoth } from '../../components/content/Behemoth';
 import { Peril } from '../../components/content/Peril';
 import { Horde } from '../../components/content/Horde';
 import { MasterBehemoth } from '@/components/content/MasterBehemoth';
+import { useRegion } from '@/contexts/RegionContext';
 
 export default function AltarScreen() {
+  const { region } = useRegion();
   const [altarResponse, setAltarResponse] = useState<any | null>(null);
   const [rollModifier, setRollModifier] = useState<number>(0);
 
   const generateAltarResponse = async () => {
     setAltarResponse(null);
-    const response = await fetch(`http://localhost:3001/api/v1/altar/sundessa/${rollModifier}`);
+    const response = await fetch(`http://localhost:3001/api/v1/altar/${region}/${rollModifier}`);
     const data = await response.json();
     setAltarResponse(data.altarResult);
     setRollModifier(rollModifier + 1);
@@ -21,7 +23,7 @@ export default function AltarScreen() {
 
   const generateBehemoth = async () => {
     setAltarResponse(null)
-    const response = await fetch(`http://localhost:3001/api/v1/behemoth/sundessa`);
+    const response = await fetch(`http://localhost:3001/api/v1/behemoth/${region}`);
     const data = await response.json();
     setAltarResponse(data.altarResult);
   }

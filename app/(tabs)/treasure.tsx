@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
+import { useRegion } from '@/contexts/RegionContext';
 
 export default function SearchScreen() {
+    const { region } = useRegion();
     const [treasureResults, setTreasureResults] = useState<any | null>(null);
 
     const search = async () => {
         setTreasureResults(null);
 
         try {
-            const response = await fetch('http://localhost:3001/api/v1/treasure/sundessa');
+            const response = await fetch(`http://localhost:3001/api/v1/treasure/${region}`);
             const data = await response.json();
             setTreasureResults(data.treasure);
         } catch (error) {
