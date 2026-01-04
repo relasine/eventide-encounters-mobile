@@ -10,6 +10,7 @@ import { Event } from '../../components/content/Event';
 import { BehemothDungeon, GeneratedDungeon, EnemyDungeon, EventDungeon, PerilDungeon } from '@/constants/types';
 import { Horde } from '../../components/content/Horde';
 import { useRegion } from '@/contexts/RegionContext';
+import { RegionSelector } from '@/components/RegionSelector';
 
 export default function HomeScreen() {
   const { region } = useRegion();
@@ -20,17 +21,14 @@ export default function HomeScreen() {
     const response = await fetch(`http://localhost:3001/api/v1/dungeon/${region}`);
     const data = await response.json();
     setEncounter(data);
-
-    if (data.roomType === 'Event') {
-      console.log(data.event);
-    }
   }
   
   return (
-    <View style={{ flex: 1, paddingTop: 100, paddingHorizontal: 20, alignItems: 'center' }}>
-      <TouchableOpacity style={styles.dungeonButton} onPress={generateDungeon}><Text>Generate Dungeon</Text></TouchableOpacity>
-      {encounter &&(
-        <View style={{alignItems: 'center', justifyContent: 'center'}}>
+    <View style={{ flex: 1, paddingTop: 100, alignItems: 'center' }}>
+      <RegionSelector />
+      <View style={{alignItems: 'center', justifyContent: 'center', flex: 1, paddingHorizontal: 20}}>
+
+      {encounter && (<>
           <Image
             source={encounter.image}
             style={{ width: 200, height: 125, alignSelf: 'center', marginVertical: 20 }}
@@ -55,8 +53,14 @@ export default function HomeScreen() {
               <Peril encounter={(encounter as PerilDungeon).peril} />
             ) : null}
           </View>
-        </View>
+        </>
       )}
+      </View>
+      <View style={{ alignItems: 'center', justifyContent: 'center', borderTopWidth: 1, borderTopColor: 'black', height: 80, width: '100%'}}>
+            <View style={{ display: 'flex', flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center' }}>
+              <TouchableOpacity style={styles.dungeonButton} onPress={generateDungeon}><Text>Generate Dungeon</Text></TouchableOpacity>
+            </View>
+        </View>    
     </View>
   );
 }

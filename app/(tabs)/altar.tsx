@@ -7,6 +7,7 @@ import { Peril } from '../../components/content/Peril';
 import { Horde } from '../../components/content/Horde';
 import { MasterBehemoth } from '@/components/content/MasterBehemoth';
 import { useRegion } from '@/contexts/RegionContext';
+import { RegionSelector } from '@/components/RegionSelector';
 
 export default function AltarScreen() {
   const { region } = useRegion();
@@ -40,6 +41,7 @@ export default function AltarScreen() {
   
   return (
     <View style={{ flex: 1, paddingTop: 100, width: '100%', alignItems: 'center' }}>
+        <RegionSelector />
         <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 20 }}>Altar</Text>
         <View style={{ display: 'flex', flexDirection: 'row', gap: 10, marginBottom: 20 }}>
             <Text>Roll Modifier: </Text>

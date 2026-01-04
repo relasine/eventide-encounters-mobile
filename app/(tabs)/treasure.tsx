@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import { useRegion } from '@/contexts/RegionContext';
+import { RegionSelector } from '@/components/RegionSelector';
 
 export default function SearchScreen() {
     const { region } = useRegion();
@@ -24,6 +25,7 @@ export default function SearchScreen() {
 
     return (
         <View style={{ flex: 1, paddingTop: 100, paddingHorizontal: 20, alignItems: 'center' }}>
+            <RegionSelector />
             <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 20 }}>Treasure Results</Text>
             {treasureResults && (
                 <View style={{ width: "100%"}}>
