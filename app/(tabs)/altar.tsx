@@ -10,6 +10,7 @@ import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
 import { Colors } from '@/constants/theme';
 import { API_KEY, API_URL } from '@/constants';
+import { useResponsive } from '@/hooks/use-responsive';
 
 export default function AltarScreen() {
   const { region } = useRegion();
@@ -18,9 +19,9 @@ export default function AltarScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const colors = Colors.dark;
+  const { isTablet } = useResponsive();
 
   const generateAltarResponse = async () => {
-    console.log("API KEY", API_KEY)
     setIsLoading(true);
     setAltarResponse(null);
     setError(null);
@@ -102,36 +103,43 @@ export default function AltarScreen() {
       style={styles.container}
     >
       <ScrollView 
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isTablet && styles.scrollContentTablet
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <RegionSelector />
-          <View style={styles.modifierContainer}>
-            <Text style={styles.modifierLabel}>Modifier</Text>
-            <View style={styles.modifierControls}>
-              <TouchableOpacity 
-                disabled={rollModifier <= 0} 
-                style={[styles.modifierButton, rollModifier <= 0 && styles.modifierButtonDisabled]} 
-                onPress={decrementRollModifier}
-              >
-                <Text style={[styles.modifierButtonText, rollModifier <= 0 && styles.modifierButtonTextDisabled]}>−</Text>
-              </TouchableOpacity>
-              <View style={styles.modifierValue}>
-                <Text style={styles.modifierValueText}>{rollModifier}</Text>
+        <View style={[
+          styles.contentWrapper,
+          isTablet && styles.contentWrapperTablet
+        ]}>
+          <View style={styles.header}>
+            <RegionSelector />
+            <View style={styles.modifierContainer}>
+              <Text style={styles.modifierLabel}>Modifier</Text>
+              <View style={styles.modifierControls}>
+                <TouchableOpacity 
+                  disabled={rollModifier <= 0} 
+                  style={[styles.modifierButton, rollModifier <= 0 && styles.modifierButtonDisabled]} 
+                  onPress={decrementRollModifier}
+                >
+                  <Text style={[styles.modifierButtonText, rollModifier <= 0 && styles.modifierButtonTextDisabled]}>−</Text>
+                </TouchableOpacity>
+                <View style={styles.modifierValue}>
+                  <Text style={styles.modifierValueText}>{rollModifier}</Text>
+                </View>
+                <TouchableOpacity 
+                  style={styles.modifierButton} 
+                  onPress={incrementRollModifier}
+                >
+                  <Text style={styles.modifierButtonText}>+</Text>
+                </TouchableOpacity>
               </View>
-              <TouchableOpacity 
-                style={styles.modifierButton} 
-                onPress={incrementRollModifier}
-              >
-                <Text style={styles.modifierButtonText}>+</Text>
-              </TouchableOpacity>
             </View>
           </View>
-        </View>
-        <Text style={styles.title}>Altar</Text>
+          <Text style={styles.title}>Altar</Text>
 
-        {isLoading ? (
+          {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.accent} />
             <Text style={styles.loadingText}>Rolling altar...</Text>
@@ -161,14 +169,14 @@ export default function AltarScreen() {
             {(altarResponse.result === 'Ambush' && altarResponse.ambush) && (
               <View style={styles.encounterSection}>
                 <Text style={styles.sectionTitle}>Ambush Result</Text>
-                <Horde encounter={altarResponse.ambush} />
+                <Horde encounter={altarResponse.ambush} isAltar />
               </View>
             )}
 
             {(altarResponse.result === 'Behemoth' && altarResponse.behemoth) && (
               <View style={styles.encounterSection}>
                 <Text style={styles.sectionTitle}>Behemoth Result</Text>
-                <Behemoth encounter={altarResponse.behemoth} />
+                <Behemoth encounter={altarResponse.behemoth} isAltar />
               </View>
             )}
 
@@ -198,9 +206,13 @@ export default function AltarScreen() {
             </Text>
           </View>
         )}
+        </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[
+        styles.footer,
+        isTablet && styles.footerTablet
+      ]}>
         <View style={styles.buttonRow}>
           <LinearGradient
             colors={colors.accentGradient as [string, string, ...string[]]}
@@ -248,6 +260,19 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingTop: 60,
         paddingBottom: 100,
+    },
+    scrollContentTablet: {
+        paddingHorizontal: 40,
+        paddingTop: 80,
+        paddingBottom: 120,
+    },
+    contentWrapper: {
+        width: '100%',
+    },
+    contentWrapperTablet: {
+        maxWidth: 700,
+        alignSelf: 'center',
+        width: '100%',
     },
   header: {
     flexDirection: 'row',
@@ -425,10 +450,18 @@ const styles = StyleSheet.create({
         borderTopColor: Colors.dark.border,
         backgroundColor: Colors.dark.backgroundPrimary,
     },
+    footerTablet: {
+        paddingHorizontal: 40,
+        paddingBottom: 30,
+        paddingTop: 20,
+    },
     buttonRow: {
         flexDirection: 'row',
         gap: 12,
         alignItems: 'center',
+        maxWidth: 700,
+        alignSelf: 'center',
+        width: '100%',
     },
     buttonGradient: {
         flex: 1,

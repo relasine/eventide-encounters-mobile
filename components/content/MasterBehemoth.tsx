@@ -50,9 +50,8 @@ export const MasterBehemoth = (props: { encounter: MasterBehemothType, generateB
                 </View>
 
                 <View style={styles.levelContainer}>
-                    <View style={styles.levelItem}>
-                        <Text style={styles.levelLabel}>Level</Text>
-                        <Text style={styles.levelValue}>{encounter.level}</Text>
+                    <View style={styles.levelBadge}>
+                        <Text style={styles.levelText}>Level {encounter.level}</Text>
                     </View>
                 </View>
                 
@@ -250,28 +249,23 @@ const styles = StyleSheet.create({
     },
     levelContainer: {
         marginBottom: 16,
-        backgroundColor: 'rgba(139, 92, 246, 0.1)',
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: Colors.dark.borderSecondary,
     },
-    levelItem: {
-        alignItems: 'center',
+    levelBadge: {
+        alignSelf: 'flex-start',
+        backgroundColor: Colors.dark.accent,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        shadowColor: Colors.dark.accent,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
     },
-    levelLabel: {
+    levelText: {
         fontSize: 14,
-        color: Colors.dark.accent,
-        marginBottom: 3,
         fontWeight: '600',
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-    },
-    levelValue: {
-        fontSize: 36,
-        fontWeight: '700',
-        color: Colors.dark.accent,
+        color: Colors.dark.text,
     },
     statsContainer: {
         flexDirection: 'row',

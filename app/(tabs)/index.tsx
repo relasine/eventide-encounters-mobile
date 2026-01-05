@@ -13,6 +13,7 @@ import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
 import { Colors } from '@/constants/theme';
 import { API_KEY, API_URL } from '@/constants';
+import { useResponsive } from '@/hooks/use-responsive';
 
 export default function HomeScreen() {
   const { region } = useRegion();
@@ -20,6 +21,7 @@ export default function HomeScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const colors = Colors.dark;
+  const { isTablet, width } = useResponsive();
 
   const generateDungeon = async () => {
     setIsLoading(true);
@@ -61,14 +63,21 @@ export default function HomeScreen() {
       style={styles.container}
     >
       <ScrollView 
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isTablet && styles.scrollContentTablet
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <RegionSelector />
-        </View>
+        <View style={[
+          styles.contentWrapper,
+          isTablet && styles.contentWrapperTablet
+        ]}>
+          <View style={styles.header}>
+            <RegionSelector />
+          </View>
 
-        <View style={styles.content}>
+          <View style={styles.content}>
           {isLoading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.accent} />
@@ -87,22 +96,54 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
           ) : encounter ? (
-            <View style={styles.encounterCard}>
-              <Image
-                source={encounter.image}
-                style={styles.encounterImage}
-                contentFit="cover"
-              />
-              
-              <View style={styles.encounterInfo}>
-                <Text style={styles.rollText}>Roll: {encounter.dungeonNumber}</Text>
-                <Text style={styles.encounterTypeText}>{encounter.roomType}</Text>
-                {encounter.roomSubtype && (
-                  <Text style={styles.subtypeText}>{encounter.roomSubtype}</Text>
-                )}
+            <View style={[
+              styles.encounterCard,
+              isTablet && styles.encounterCardTablet
+            ]}>
+              <View style={[
+                styles.cardContent,
+                isTablet && styles.cardContentTablet
+              ]}>
+                <View style={[
+                  styles.imageContainer,
+                  isTablet && styles.imageContainerTablet
+                ]}>
+                  <Image
+                    source={encounter.image}
+                    style={[
+                      styles.encounterImage,
+                      isTablet && styles.encounterImageTablet
+                    ]}
+                    contentFit="cover"
+                  />
+                </View>
+                
+                <View style={[
+                  styles.encounterInfo,
+                  isTablet && styles.encounterInfoTablet
+                ]}>
+                   {encounter.roomType === 'Combat' &&
+                    (encounter.roomSubtype === 'Behemoth' && 'enemy' in encounter
+                      ? <Text style={styles.name}>{(encounter as BehemothDungeon).enemy.name}</Text>
+                      : (encounter.roomSubtype === 'Forsaken' || encounter.roomSubtype === 'Ambush') && 'enemy' in encounter
+                        ? <Text style={styles.name}>{(encounter as EnemyDungeon).enemy.name}</Text>
+                        : null)
+                  }
+                  <Text style={styles.rollText}>Roll: {encounter.dungeonNumber}</Text>
+                  <Text style={styles.encounterTypeText}>{encounter.roomType}</Text>
+                  {encounter.roomSubtype && (
+                    <Text style={styles.subtypeText}>{encounter.roomSubtype}</Text>
+                  )}
+                  {/* 
+                    Show the enemy/behemoth/forsaken name for Combat rooms in a type-safe way
+                  */}
+                </View>
               </View>
 
-              <View style={styles.encounterDetails}>
+              <View style={[
+                styles.encounterDetails,
+                isTablet && styles.encounterDetailsTablet
+              ]}>
                 {encounter.roomType === 'Combat' && encounter.roomSubtype === 'Behemoth' ? (
                   <Behemoth encounter={(encounter as BehemothDungeon).enemy} />
                 ) : null}
@@ -128,10 +169,14 @@ export default function HomeScreen() {
               </Text>
             </View>
           )}
+          </View>
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[
+        styles.footer,
+        isTablet && styles.footerTablet
+      ]}>
         <LinearGradient
           colors={colors.accentGradient as [string, string, ...string[]]}
           start={{ x: 0, y: 0 }}
@@ -162,6 +207,25 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     paddingBottom: 100,
   },
+  scrollContentTablet: {
+    paddingHorizontal: 40,
+    paddingTop: 80,
+    paddingBottom: 120,
+  },
+  contentWrapper: {
+    width: '100%',
+  },
+  name: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: Colors.dark.text,
+    paddingBottom: 8
+  },
+  contentWrapperTablet: {
+    maxWidth: 700,
+    alignSelf: 'center',
+    width: '100%',
+  },
   header: {
     marginBottom: 24,
   },
@@ -177,16 +241,51 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },
+  encounterCardTablet: {
+    overflow: 'visible',
+  },
+  cardContent: {
+    width: '100%',
+  },
+  cardContentTablet: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 20,
+    gap: 20,
+  },
+  imageContainer: {
+    width: '100%',
+  },
+  imageContainerTablet: {
+    width: '44%',
+    flexShrink: 0,
+    paddingTop: 0,
+    paddingHorizontal: 0,
+    alignItems: 'flex-start',
+  },
   encounterImage: {
     width: '100%',
     aspectRatio: 400 / 250, // 1.6:1 ratio (400x250)
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
+  encounterImageTablet: {
+    width: '100%',
+    maxWidth: 350,
+    borderRadius: 16,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
   encounterInfo: {
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  encounterInfoTablet: {
+    flex: 1,
+    padding: 0,
+    borderBottomWidth: 0,
+    paddingTop: 0,
   },
   rollText: {
     fontSize: 14,
@@ -207,6 +306,12 @@ const styles = StyleSheet.create({
   },
   encounterDetails: {
     padding: 20,
+  },
+  encounterDetailsTablet: {
+    paddingTop: 20,
+    paddingLeft: 20,
+    paddingRight: 20,
+    paddingBottom: 20,
   },
   emptyState: {
     alignItems: 'center',
@@ -251,6 +356,11 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.dark.border,
     backgroundColor: Colors.dark.backgroundPrimary,
   },
+  footerTablet: {
+    paddingHorizontal: 40,
+    paddingBottom: 30,
+    paddingTop: 20,
+  },
   buttonGradient: {
     borderRadius: 14,
     shadowColor: '#8b5cf6',
@@ -258,6 +368,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 20,
     elevation: 8,
+    maxWidth: 700,
+    alignSelf: 'center',
+    width: '100%',
   },
   generateButton: {
     paddingVertical: 16,
@@ -314,4 +427,5 @@ const styles = StyleSheet.create({
   generateButtonDisabled: {
     opacity: 0.6,
   },
+  
 });

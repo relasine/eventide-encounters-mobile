@@ -2,22 +2,20 @@ import { View, Text, StyleSheet } from "react-native"
 import { Behemoth as BehemothType } from "@/constants/types"
 import { Colors } from "@/constants/theme"
 
-export const Behemoth = (props: { encounter: BehemothType }) => {
-    const { encounter } = props;
+export const Behemoth = (props: { encounter: BehemothType, isAltar?: boolean }) => {
+    const { encounter, isAltar } = props;
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.name}>{encounter.name}</Text>
+                {isAltar ? <Text style={styles.name}>{encounter.name}</Text> : null}
+                <View style={styles.badges}>
+                    <View style={styles.levelBadge}>
+                        <Text style={styles.levelText}>Level {encounter.level}</Text>
+                    </View>
+                </View>
             </View>
             
             <Text style={styles.description}>{encounter.description}</Text>
-            
-            <View style={styles.levelContainer}>
-                <View style={styles.levelItem}>
-                    <Text style={styles.levelLabel}>Level</Text>
-                    <Text style={styles.levelValue}>{encounter.level}</Text>
-                </View>
-            </View>
             
             <View style={styles.statsContainer}>
                 <View style={styles.statItem}>
@@ -48,50 +46,41 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
         marginBottom: 16,
-        flexWrap: 'wrap',
         gap: 12,
     },
     name: {
         fontSize: 24,
         fontWeight: '700',
         color: Colors.dark.text,
-        flex: 1,
-        lineHeight: 30,
+        marginBottom: 8,
+    },
+    badges: {
+        flexDirection: 'row',
+        gap: 8,
+        flexWrap: 'wrap',
+    },
+    levelBadge: {
+        backgroundColor: Colors.dark.accent,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        shadowColor: Colors.dark.accent,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    levelText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: Colors.dark.text,
     },
     description: {
         fontSize: 16,
         color: Colors.dark.textSecondary,
         lineHeight: 24,
         marginBottom: 20,
-    },
-    levelContainer: {
-        marginBottom: 16,
-        backgroundColor: 'rgba(139, 92, 246, 0.1)',
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: Colors.dark.borderSecondary,
-    },
-    levelItem: {
-        alignItems: 'center',
-    },
-    levelLabel: {
-        fontSize: 14,
-        color: Colors.dark.accent,
-        marginBottom: 3,
-        fontWeight: '600',
-        textTransform: 'uppercase',
-        letterSpacing: 1,
-    },
-    levelValue: {
-        fontSize: 32,
-        fontWeight: '700',
-        color: Colors.dark.accent,
     },
     statsContainer: {
         flexDirection: 'row',

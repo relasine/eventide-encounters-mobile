@@ -5,6 +5,7 @@ import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
 import { Colors } from '@/constants/theme';
 import { API_KEY, API_URL } from '@/constants';
+import { useResponsive } from '@/hooks/use-responsive';
 
 export default function SearchScreen() {
     const { region } = useRegion();
@@ -12,6 +13,7 @@ export default function SearchScreen() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const colors = Colors.dark;
+    const { isTablet } = useResponsive();
 
     const search = async () => {
         setIsLoading(true);
@@ -54,13 +56,20 @@ export default function SearchScreen() {
             style={styles.container}
         >
             <ScrollView 
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[
+                    styles.scrollContent,
+                    isTablet && styles.scrollContentTablet
+                ]}
                 showsVerticalScrollIndicator={false}
             >
-                <View style={styles.header}>
-                    <RegionSelector />
-                    <Text style={styles.title}>Search</Text>
-                </View>
+                <View style={[
+                    styles.contentWrapper,
+                    isTablet && styles.contentWrapperTablet
+                ]}>
+                    <View style={styles.header}>
+                        <RegionSelector />
+                        <Text style={styles.title}>Search</Text>
+                    </View>
 
                 {isLoading ? (
                     <View style={styles.loadingContainer}>
@@ -104,9 +113,13 @@ export default function SearchScreen() {
                         </Text>
                     </View>
                 )}
+                </View>
             </ScrollView>
 
-            <View style={styles.footer}>
+            <View style={[
+                styles.footer,
+                isTablet && styles.footerTablet
+            ]}>
                 <LinearGradient
                     colors={colors.accentGradient as [string, string, ...string[]]}
                     start={{ x: 0, y: 0 }}
@@ -136,6 +149,19 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingTop: 60,
         paddingBottom: 100,
+    },
+    scrollContentTablet: {
+        paddingHorizontal: 40,
+        paddingTop: 80,
+        paddingBottom: 120,
+    },
+    contentWrapper: {
+        width: '100%',
+    },
+    contentWrapperTablet: {
+        maxWidth: 700,
+        alignSelf: 'center',
+        width: '100%',
     },
     header: {
         marginBottom: 24,
@@ -253,6 +279,11 @@ const styles = StyleSheet.create({
         borderTopColor: Colors.dark.border,
         backgroundColor: Colors.dark.backgroundPrimary,
     },
+    footerTablet: {
+        paddingHorizontal: 40,
+        paddingBottom: 30,
+        paddingTop: 20,
+    },
     buttonGradient: {
         borderRadius: 14,
         shadowColor: Colors.dark.accent,
@@ -260,6 +291,9 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.5,
         shadowRadius: 20,
         elevation: 8,
+        maxWidth: 700,
+        alignSelf: 'center',
+        width: '100%',
     },
     searchButton: {
         paddingVertical: 16,

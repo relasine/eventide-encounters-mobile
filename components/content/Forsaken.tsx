@@ -9,7 +9,6 @@ export const Forsaken = (props: { encounter: Enemy }) => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.name}>{encounter.name}</Text>
                 <View style={styles.badges}>
                     <View style={styles.levelBadge}>
                         <Text style={styles.levelText}>Level {encounter.level}</Text>

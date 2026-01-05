@@ -2,14 +2,14 @@ import { Enemy } from "@/constants/types"
 import { View, Text, StyleSheet } from "react-native"
 import { Colors } from "@/constants/theme"
 
-export const Horde = (props: { encounter: Enemy }) => {
-    const { encounter } = props;
+export const Horde = (props: { encounter: Enemy, isAltar?: boolean }) => {
+    const { encounter, isAltar } = props;
     const colors = Colors.dark;
 
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.name}>{encounter.name}</Text>
+                {isAltar ? <Text style={styles.name}>{encounter.name}</Text> : null}
                 <View style={styles.badges}>
                     <View style={styles.levelBadge}>
                         <Text style={styles.levelText}>Level {encounter.level}</Text>

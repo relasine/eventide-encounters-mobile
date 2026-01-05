@@ -73,6 +73,9 @@ export default {
     },
     extra: {
       appVariant: process.env.APP_VARIANT || 'production',
+      eas: {
+        projectId: '0a1381f3-8b5f-42be-bb0d-6940b594bedf',
+      },
     },
   },
 };
