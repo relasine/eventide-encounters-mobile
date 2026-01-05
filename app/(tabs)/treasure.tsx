@@ -4,23 +4,45 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
 import { Colors } from '@/constants/theme';
+import { API_KEY, API_URL } from '@/constants';
 
 export default function TreasureScreen() {
     const { region } = useRegion();
     const [treasureResults, setTreasureResults] = useState<any | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const colors = Colors.dark;
 
     const search = async () => {
         setIsLoading(true);
         setTreasureResults(null);
+        setError(null);
+
+        console.log("API KEY SANITY", `${API_URL}/api/v1/treasure/${region}`)
 
         try {
-            const response = await fetch(`http://localhost:3001/api/v1/treasure/${region}`);
+            const response = await fetch(`${API_URL}/api/v1/treasure/${region}`, {
+                headers: {
+                    'x-api-key': API_KEY,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch treasure: ${response.status} ${response.statusText}`);
+            }
+            
             const data = await response.json();
+            
+            if (!data || !data.treasure) {
+                throw new Error('Invalid response format from server');
+            }
+            
             setTreasureResults(data.treasure);
         } catch (error) {
-            console.error(error);
+            const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+            setError(errorMessage);
+            console.error('Error fetching treasure:', error);
         } finally {
             setIsLoading(false);
         }
@@ -50,6 +72,18 @@ export default function TreasureScreen() {
                     <View style={styles.loadingContainer}>
                         <ActivityIndicator size="large" color={colors.accent} />
                         <Text style={styles.loadingText}>Discovering treasure...</Text>
+                    </View>
+                ) : error ? (
+                    <View style={styles.errorContainer}>
+                        <Text style={styles.errorIcon}>⚠️</Text>
+                        <Text style={styles.errorTitle}>Error</Text>
+                        <Text style={styles.errorText}>{error}</Text>
+                        <TouchableOpacity 
+                            style={styles.retryButton}
+                            onPress={search}
+                        >
+                            <Text style={styles.retryButtonText}>Try Again</Text>
+                        </TouchableOpacity>
                     </View>
                 ) : treasureResults ? (
                     <View style={styles.treasureCard}>
@@ -119,9 +153,10 @@ export default function TreasureScreen() {
                     style={styles.buttonGradient}
                 >
                     <TouchableOpacity 
-                        style={styles.treasureButton} 
+                        style={[styles.treasureButton, isLoading && styles.treasureButtonDisabled]} 
                         onPress={search}
                         activeOpacity={0.9}
+                        disabled={isLoading}
                     >
                         <Text style={styles.treasureButtonText}>Discover Treasure</Text>
                     </TouchableOpacity>
@@ -310,5 +345,47 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: Colors.dark.text,
         letterSpacing: 0.5,
+    },
+    errorContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 64,
+        paddingHorizontal: 32,
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(239, 68, 68, 0.3)',
+    },
+    errorIcon: {
+        fontSize: 48,
+        marginBottom: 16,
+    },
+    errorTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#ef4444',
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    errorText: {
+        fontSize: 16,
+        color: Colors.dark.textSecondary,
+        textAlign: 'center',
+        lineHeight: 24,
+        marginBottom: 24,
+    },
+    retryButton: {
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 12,
+        backgroundColor: '#ef4444',
+    },
+    retryButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: Colors.dark.text,
+    },
+    treasureButtonDisabled: {
+        opacity: 0.6,
     },
 });

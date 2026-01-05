@@ -9,24 +9,45 @@ import { MasterBehemoth } from '@/components/content/MasterBehemoth';
 import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
 import { Colors } from '@/constants/theme';
+import { API_KEY, API_URL } from '@/constants';
 
 export default function AltarScreen() {
   const { region } = useRegion();
   const [altarResponse, setAltarResponse] = useState<any | null>(null);
   const [rollModifier, setRollModifier] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const colors = Colors.dark;
 
   const generateAltarResponse = async () => {
+    console.log("API KEY", API_KEY)
     setIsLoading(true);
     setAltarResponse(null);
+    setError(null);
     try {
-      const response = await fetch(`http://localhost:3001/api/v1/altar/${region}/${rollModifier}`);
+      const response = await fetch(`${API_URL}/api/v1/altar/${region}/${rollModifier}`, {
+        headers: {
+          'x-api-key': API_KEY,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch altar response: ${response.status} ${response.statusText}`);
+      }
+      
       const data = await response.json();
+      
+      if (!data || !data.altarResult) {
+        throw new Error('Invalid response format from server');
+      }
+      
       setAltarResponse(data.altarResult);
       setRollModifier(rollModifier + 1);
     } catch (error) {
-      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      setError(errorMessage);
+      console.error('Error generating altar response:', error);
     } finally {
       setIsLoading(false);
     }
@@ -35,12 +56,29 @@ export default function AltarScreen() {
   const generateBehemoth = async () => {
     setIsLoading(true);
     setAltarResponse(null);
+    setError(null);
     try {
-      const response = await fetch(`http://localhost:3001/api/v1/behemoth/${region}`);
+      const response = await fetch(`${API_URL}/api/v1/behemoth/${region}`, {
+        headers: {
+          'x-api-key': API_KEY
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch behemoth: ${response.status} ${response.statusText}`);
+      }
+      
       const data = await response.json();
+      
+      if (!data || !data.altarResult) {
+        throw new Error('Invalid response format from server');
+      }
+      
       setAltarResponse(data.altarResult);
     } catch (error) {
-      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      setError(errorMessage);
+      console.error('Error generating behemoth:', error);
     } finally {
       setIsLoading(false);
     }
@@ -97,6 +135,18 @@ export default function AltarScreen() {
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.accent} />
             <Text style={styles.loadingText}>Rolling altar...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorIcon}>⚠️</Text>
+            <Text style={styles.errorTitle}>Error</Text>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity 
+              style={styles.retryButton}
+              onPress={generateAltarResponse}
+            >
+              <Text style={styles.retryButtonText}>Try Again</Text>
+            </TouchableOpacity>
           </View>
         ) : altarResponse ? (
           <View style={styles.responseContainer}>
@@ -159,9 +209,10 @@ export default function AltarScreen() {
             style={styles.buttonGradient}
           >
             <TouchableOpacity 
-              style={styles.primaryButton} 
+              style={[styles.primaryButton, isLoading && styles.primaryButtonDisabled]} 
               onPress={generateAltarResponse}
               activeOpacity={0.9}
+              disabled={isLoading}
             >
               <Text style={styles.primaryButtonText}>Roll Altar</Text>
             </TouchableOpacity>
@@ -425,5 +476,47 @@ const styles = StyleSheet.create({
     },
     secondaryButtonTextDisabled: {
         color: Colors.dark.textTertiary,
+    },
+    errorContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 64,
+        paddingHorizontal: 32,
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(239, 68, 68, 0.3)',
+    },
+    errorIcon: {
+        fontSize: 48,
+        marginBottom: 16,
+    },
+    errorTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#ef4444',
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    errorText: {
+        fontSize: 16,
+        color: Colors.dark.textSecondary,
+        textAlign: 'center',
+        lineHeight: 24,
+        marginBottom: 24,
+    },
+    retryButton: {
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 12,
+        backgroundColor: '#ef4444',
+    },
+    retryButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: Colors.dark.text,
+    },
+    primaryButtonDisabled: {
+        opacity: 0.6,
     },
 });

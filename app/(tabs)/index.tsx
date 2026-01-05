@@ -12,22 +12,42 @@ import { Horde } from '../../components/content/Horde';
 import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
 import { Colors } from '@/constants/theme';
+import { API_KEY, API_URL } from '@/constants';
 
 export default function HomeScreen() {
   const { region } = useRegion();
   const [encounter, setEncounter] = useState<GeneratedDungeon | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const colors = Colors.dark;
 
   const generateDungeon = async () => {
     setIsLoading(true);
     setEncounter(null);
+    setError(null);
     try {
-      const response = await fetch(`http://localhost:3001/api/v1/dungeon/${region}`);
+      const response = await fetch(`${API_URL}/api/v1/dungeon/${region}`, {
+        headers: {
+          'x-api-key': API_KEY,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to generate dungeon: ${response.status} ${response.statusText}`);
+      }
+      
       const data = await response.json();
+      
+      if (!data) {
+        throw new Error('Invalid response format from server');
+      }
+      
       setEncounter(data);
     } catch (error) {
-      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      setError(errorMessage);
+      console.error('Error generating dungeon:', error);
     } finally {
       setIsLoading(false);
     }
@@ -53,6 +73,18 @@ export default function HomeScreen() {
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.accent} />
               <Text style={styles.loadingText}>Generating dungeon...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorIcon}>⚠️</Text>
+              <Text style={styles.errorTitle}>Error</Text>
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity 
+                style={styles.retryButton}
+                onPress={generateDungeon}
+              >
+                <Text style={styles.retryButtonText}>Try Again</Text>
+              </TouchableOpacity>
             </View>
           ) : encounter ? (
             <View style={styles.encounterCard}>
@@ -107,9 +139,10 @@ export default function HomeScreen() {
           style={styles.buttonGradient}
         >
           <TouchableOpacity 
-            style={styles.generateButton}
+            style={[styles.generateButton, isLoading && styles.generateButtonDisabled]}
             onPress={generateDungeon}
             activeOpacity={0.9}
+            disabled={isLoading}
           >
             <Text style={styles.generateButtonText}>Generate Dungeon</Text>
           </TouchableOpacity>
@@ -238,5 +271,47 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.dark.text,
     letterSpacing: 0.5,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 64,
+    paddingHorizontal: 32,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  errorIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#ef4444',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    color: Colors.dark.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  retryButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    backgroundColor: '#ef4444',
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.dark.text,
+  },
+  generateButtonDisabled: {
+    opacity: 0.6,
   },
 });

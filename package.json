@@ -4,13 +4,19 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
+    "start:staging": "APP_VARIANT=staging expo start",
+    "start:dev": "APP_VARIANT=development expo start",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
+    "android:staging": "APP_VARIANT=staging expo start --android",
     "ios": "expo start --ios",
+    "ios:staging": "APP_VARIANT=staging expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "build:ios:staging": "APP_VARIANT=staging eas build --platform ios --profile staging",
+    "build:ios:production": "eas build --platform ios --profile production"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
