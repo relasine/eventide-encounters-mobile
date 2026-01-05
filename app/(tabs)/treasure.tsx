@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
@@ -8,9 +8,11 @@ import { Colors } from '@/constants/theme';
 export default function TreasureScreen() {
     const { region } = useRegion();
     const [treasureResults, setTreasureResults] = useState<any | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
     const colors = Colors.dark;
 
     const search = async () => {
+        setIsLoading(true);
         setTreasureResults(null);
 
         try {
@@ -19,6 +21,8 @@ export default function TreasureScreen() {
             setTreasureResults(data.treasure);
         } catch (error) {
             console.error(error);
+        } finally {
+            setIsLoading(false);
         }
     }
 
@@ -42,7 +46,12 @@ export default function TreasureScreen() {
                     <Text style={styles.title}>Treasure</Text>
                 </View>
 
-                {treasureResults ? (
+                {isLoading ? (
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" color={colors.accent} />
+                        <Text style={styles.loadingText}>Discovering treasure...</Text>
+                    </View>
+                ) : treasureResults ? (
                     <View style={styles.treasureCard}>
                         {treasureResults.item ? (
                             <View style={styles.itemSection}>
@@ -256,6 +265,18 @@ const styles = StyleSheet.create({
         color: Colors.dark.textSecondary,
         textAlign: 'center',
         lineHeight: 24,
+    },
+    loadingContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 64,
+        paddingHorizontal: 32,
+    },
+    loadingText: {
+        fontSize: 16,
+        color: Colors.dark.textSecondary,
+        marginTop: 16,
+        textAlign: 'center',
     },
     footer: {
         position: 'absolute',

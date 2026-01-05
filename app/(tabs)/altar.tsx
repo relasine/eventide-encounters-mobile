@@ -1,4 +1,4 @@
-import { View, StyleSheet, TouchableOpacity, Text, ScrollView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 
@@ -14,21 +14,36 @@ export default function AltarScreen() {
   const { region } = useRegion();
   const [altarResponse, setAltarResponse] = useState<any | null>(null);
   const [rollModifier, setRollModifier] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(false);
   const colors = Colors.dark;
 
   const generateAltarResponse = async () => {
+    setIsLoading(true);
     setAltarResponse(null);
-    const response = await fetch(`http://localhost:3001/api/v1/altar/${region}/${rollModifier}`);
-    const data = await response.json();
-    setAltarResponse(data.altarResult);
-    setRollModifier(rollModifier + 1);
+    try {
+      const response = await fetch(`http://localhost:3001/api/v1/altar/${region}/${rollModifier}`);
+      const data = await response.json();
+      setAltarResponse(data.altarResult);
+      setRollModifier(rollModifier + 1);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const generateBehemoth = async () => {
-    setAltarResponse(null)
-    const response = await fetch(`http://localhost:3001/api/v1/behemoth/${region}`);
-    const data = await response.json();
-    setAltarResponse(data.altarResult);
+    setIsLoading(true);
+    setAltarResponse(null);
+    try {
+      const response = await fetch(`http://localhost:3001/api/v1/behemoth/${region}`);
+      const data = await response.json();
+      setAltarResponse(data.altarResult);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const decrementRollModifier = () => {
@@ -54,32 +69,36 @@ export default function AltarScreen() {
       >
         <View style={styles.header}>
           <RegionSelector />
-          <Text style={styles.title}>Altar</Text>
-        </View>
-
-        <View style={styles.modifierSection}>
-          <Text style={styles.modifierLabel}>Roll Modifier</Text>
-          <View style={styles.modifierControls}>
-            <TouchableOpacity 
-              disabled={rollModifier <= 0} 
-              style={[styles.modifierButton, rollModifier <= 0 && styles.modifierButtonDisabled]} 
-              onPress={decrementRollModifier}
-            >
-              <Text style={[styles.modifierButtonText, rollModifier <= 0 && styles.modifierButtonTextDisabled]}>−</Text>
-            </TouchableOpacity>
-            <View style={styles.modifierValue}>
-              <Text style={styles.modifierValueText}>{rollModifier}</Text>
+          <View style={styles.modifierContainer}>
+            <Text style={styles.modifierLabel}>Modifier</Text>
+            <View style={styles.modifierControls}>
+              <TouchableOpacity 
+                disabled={rollModifier <= 0} 
+                style={[styles.modifierButton, rollModifier <= 0 && styles.modifierButtonDisabled]} 
+                onPress={decrementRollModifier}
+              >
+                <Text style={[styles.modifierButtonText, rollModifier <= 0 && styles.modifierButtonTextDisabled]}>−</Text>
+              </TouchableOpacity>
+              <View style={styles.modifierValue}>
+                <Text style={styles.modifierValueText}>{rollModifier}</Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.modifierButton} 
+                onPress={incrementRollModifier}
+              >
+                <Text style={styles.modifierButtonText}>+</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity 
-              style={styles.modifierButton} 
-              onPress={incrementRollModifier}
-            >
-              <Text style={styles.modifierButtonText}>+</Text>
-            </TouchableOpacity>
           </View>
         </View>
+        <Text style={styles.title}>Altar</Text>
 
-        {altarResponse ? (
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.accent} />
+            <Text style={styles.loadingText}>Rolling altar...</Text>
+          </View>
+        ) : altarResponse ? (
           <View style={styles.responseContainer}>
             {altarResponse.result !== 'Master Behemoth' && (
               <View style={styles.responseCard}>
@@ -179,76 +198,74 @@ const styles = StyleSheet.create({
         paddingTop: 60,
         paddingBottom: 100,
     },
-    header: {
-        marginBottom: 24,
-    },
-    title: {
-        fontSize: 32,
-        fontWeight: '700',
-        color: Colors.dark.text,
-        marginTop: 12,
-        marginBottom: 8,
-    },
-    modifierSection: {
-        backgroundColor: 'rgba(21, 21, 32, 0.6)',
-        padding: 20,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: Colors.dark.border,
-        marginBottom: 24,
-    },
-    modifierLabel: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: Colors.dark.textTertiary,
-        marginBottom: 12,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    modifierControls: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 16,
-    },
-    modifierButton: {
-        width: 44,
-        height: 44,
-        borderRadius: 12,
-        backgroundColor: Colors.dark.accent,
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: Colors.dark.accent,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    modifierButtonDisabled: {
-        backgroundColor: Colors.dark.backgroundTertiary,
-        shadowOpacity: 0,
-        elevation: 0,
-        borderWidth: 1,
-        borderColor: Colors.dark.border,
-    },
-    modifierButtonText: {
-        fontSize: 24,
-        fontWeight: '600',
-        color: Colors.dark.text,
-    },
-    modifierButtonTextDisabled: {
-        color: Colors.dark.textTertiary,
-    },
-    modifierValue: {
-        minWidth: 60,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    modifierValueText: {
-        fontSize: 24,
-        fontWeight: '700',
-        color: Colors.dark.text,
-    },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    width: '100%',
+  },
+  modifierContainer: {
+    alignItems: 'flex-end',
+  },
+  modifierLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.dark.textTertiary,
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  modifierControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modifierButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: Colors.dark.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: Colors.dark.accent,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  modifierButtonDisabled: {
+    backgroundColor: Colors.dark.backgroundTertiary,
+    shadowOpacity: 0,
+    elevation: 0,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  modifierButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.dark.text,
+    lineHeight: 18,
+  },
+  modifierButtonTextDisabled: {
+    color: Colors.dark.textTertiary,
+  },
+  modifierValue: {
+    minWidth: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modifierValueText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.dark.text,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: Colors.dark.text,
+    marginBottom: 24,
+  },
     responseContainer: {
         width: '100%',
         gap: 20,
@@ -327,13 +344,25 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         textAlign: 'center',
     },
-    emptyStateText: {
-        fontSize: 16,
-        color: Colors.dark.textSecondary,
-        textAlign: 'center',
-        lineHeight: 24,
-    },
-    footer: {
+  emptyStateText: {
+    fontSize: 16,
+    color: Colors.dark.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 64,
+    paddingHorizontal: 32,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors.dark.textSecondary,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  footer: {
         position: 'absolute',
         bottom: 0,
         left: 0,

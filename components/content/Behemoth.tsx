@@ -4,17 +4,20 @@ import { Colors } from "@/constants/theme"
 
 export const Behemoth = (props: { encounter: BehemothType }) => {
     const { encounter } = props;
-    console.log(JSON.stringify(encounter));
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.name}>{encounter.name}</Text>
-                <View style={styles.levelBadge}>
-                    <Text style={styles.levelText}>Level {encounter.level}</Text>
-                </View>
             </View>
             
             <Text style={styles.description}>{encounter.description}</Text>
+            
+            <View style={styles.levelContainer}>
+                <View style={styles.levelItem}>
+                    <Text style={styles.levelLabel}>Level</Text>
+                    <Text style={styles.levelValue}>{encounter.level}</Text>
+                </View>
+            </View>
             
             <View style={styles.statsContainer}>
                 <View style={styles.statItem}>
@@ -59,27 +62,36 @@ const styles = StyleSheet.create({
         flex: 1,
         lineHeight: 30,
     },
-    levelBadge: {
-        backgroundColor: Colors.dark.accent,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 16,
-        shadowColor: Colors.dark.accent,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    levelText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: Colors.dark.text,
-    },
     description: {
         fontSize: 16,
         color: Colors.dark.textSecondary,
         lineHeight: 24,
         marginBottom: 20,
+    },
+    levelContainer: {
+        marginBottom: 16,
+        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: Colors.dark.borderSecondary,
+    },
+    levelItem: {
+        alignItems: 'center',
+    },
+    levelLabel: {
+        fontSize: 14,
+        color: Colors.dark.accent,
+        marginBottom: 3,
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    levelValue: {
+        fontSize: 32,
+        fontWeight: '700',
+        color: Colors.dark.accent,
     },
     statsContainer: {
         flexDirection: 'row',

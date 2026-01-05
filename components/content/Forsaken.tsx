@@ -15,7 +15,7 @@ export const Forsaken = (props: { encounter: Enemy }) => {
                         <Text style={styles.levelText}>Level {encounter.level}</Text>
                     </View>
                     <View style={styles.qtyBadge}>
-                        <Text style={styles.qtyText}>{encounter.qty}</Text>
+                        <Text style={styles.qtyText}>QTY: {encounter.qty}</Text>
                     </View>
                 </View>
             </View>

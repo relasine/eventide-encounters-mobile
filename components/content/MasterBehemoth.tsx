@@ -14,9 +14,6 @@ export const MasterBehemoth = (props: { encounter: MasterBehemothType, generateB
             <View style={styles.container}>
                 <View style={styles.header}>
                     <Text style={styles.title}>{encounter.name}</Text>
-                    <View style={styles.levelBadge}>
-                        <Text style={styles.levelText}>Level {encounter.level}</Text>
-                    </View>
                 </View>
 
                 <LinearGradient
@@ -52,6 +49,13 @@ export const MasterBehemoth = (props: { encounter: MasterBehemothType, generateB
                     </TouchableOpacity>
                 </View>
 
+                <View style={styles.levelContainer}>
+                    <View style={styles.levelItem}>
+                        <Text style={styles.levelLabel}>Level</Text>
+                        <Text style={styles.levelValue}>{encounter.level}</Text>
+                    </View>
+                </View>
+                
                 <View style={styles.statsContainer}>
                     <View style={styles.statItem}>
                         <Text style={styles.statLabel}>Health</Text>
@@ -156,13 +160,34 @@ const Attacks = (props: { attacks: Array<{ d6: number; action: string }> | { d6:
 
 const BackInTown = (props: { backInTown: BackInTownType }) => {
     const { backInTown } = props;
+    const [isRevealed, setIsRevealed] = useState(false);
+    
     return (
         <View style={styles.section}>
             <Text style={styles.sectionTitle}>Back in Town</Text>
             <View style={styles.backInTownCard}>
-                {backInTown.map((text, index) => (
-                    <Text key={text || index} style={styles.backInTownText}>{text}</Text>
-                ))}
+                {isRevealed ? (
+                    <>
+                        {backInTown.map((text, index) => (
+                            <Text key={text || index} style={styles.backInTownText}>{text}</Text>
+                        ))}
+                        <TouchableOpacity 
+                            onPress={() => setIsRevealed(false)}
+                            activeOpacity={0.7}
+                            style={styles.revealButton}
+                        >
+                            <Text style={styles.revealButtonText}>Hide</Text>
+                        </TouchableOpacity>
+                    </>
+                ) : (
+                    <TouchableOpacity 
+                        onPress={() => setIsRevealed(true)}
+                        activeOpacity={0.7}
+                        style={styles.revealButton}
+                    >
+                        <Text style={styles.revealButtonText}>Reveal</Text>
+                    </TouchableOpacity>
+                )}
             </View>
         </View>
     )
@@ -185,23 +210,6 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: Colors.dark.text,
         lineHeight: 40,
-    },
-    levelBadge: {
-        alignSelf: 'flex-start',
-        backgroundColor: Colors.dark.accent,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 16,
-        shadowColor: Colors.dark.accent,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    levelText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: Colors.dark.text,
     },
     buttonGradient: {
         borderRadius: 14,
@@ -239,6 +247,31 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: Colors.dark.accent,
         marginTop: 4,
+    },
+    levelContainer: {
+        marginBottom: 16,
+        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: Colors.dark.borderSecondary,
+    },
+    levelItem: {
+        alignItems: 'center',
+    },
+    levelLabel: {
+        fontSize: 14,
+        color: Colors.dark.accent,
+        marginBottom: 3,
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
+    levelValue: {
+        fontSize: 36,
+        fontWeight: '700',
+        color: Colors.dark.accent,
     },
     statsContainer: {
         flexDirection: 'row',
@@ -332,6 +365,7 @@ const styles = StyleSheet.create({
     rewardsCard: {
         backgroundColor: 'rgba(139, 92, 246, 0.1)',
         padding: 16,
+        paddingBottom: 8,
         borderRadius: 12,
         borderWidth: 1,
         borderColor: Colors.dark.borderSecondary,
@@ -358,6 +392,7 @@ const styles = StyleSheet.create({
     backInTownCard: {
         backgroundColor: Colors.dark.backgroundTertiary,
         padding: 16,
+        paddingTop: 8,
         borderRadius: 12,
         borderWidth: 1,
         borderColor: Colors.dark.border,
@@ -367,6 +402,17 @@ const styles = StyleSheet.create({
         color: Colors.dark.textSecondary,
         lineHeight: 24,
         marginBottom: 12,
+    },
+    revealButton: {
+        marginTop: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        alignSelf: 'flex-start',
+    },
+    revealButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: Colors.dark.accent,
     },
     attackCard: {
         backgroundColor: 'rgba(139, 92, 246, 0.1)',

@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { View, StyleSheet, TouchableOpacity, Text, ScrollView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 
@@ -16,13 +16,21 @@ import { Colors } from '@/constants/theme';
 export default function HomeScreen() {
   const { region } = useRegion();
   const [encounter, setEncounter] = useState<GeneratedDungeon | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const colors = Colors.dark;
 
   const generateDungeon = async () => {
+    setIsLoading(true);
     setEncounter(null);
-    const response = await fetch(`http://localhost:3001/api/v1/dungeon/${region}`);
-    const data = await response.json();
-    setEncounter(data);
+    try {
+      const response = await fetch(`http://localhost:3001/api/v1/dungeon/${region}`);
+      const data = await response.json();
+      setEncounter(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
   }
   
   return (
@@ -41,7 +49,12 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.content}>
-          {encounter ? (
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.accent} />
+              <Text style={styles.loadingText}>Generating dungeon...</Text>
+            </View>
+          ) : encounter ? (
             <View style={styles.encounterCard}>
               <Image
                 source={encounter.image}
@@ -180,6 +193,18 @@ const styles = StyleSheet.create({
     color: Colors.dark.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 64,
+    paddingHorizontal: 32,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors.dark.textSecondary,
+    marginTop: 16,
+    textAlign: 'center',
   },
   footer: {
     position: 'absolute',
