@@ -33,6 +33,10 @@ export type Behemoth = Omit<Enemy, "qty"> & {
     reward: string
     health: number
     attacksPerRound: number
+    attacks: undefined | {
+        d6: number
+        action: string
+    }
 }
 
 export type Ability = {

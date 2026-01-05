@@ -1,5 +1,5 @@
-import { View, StyleSheet, TouchableOpacity, Text} from 'react-native';
-
+import { View, StyleSheet, TouchableOpacity, Text, ScrollView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 
 import { Behemoth } from '../../components/content/Behemoth';
@@ -8,11 +8,13 @@ import { Horde } from '../../components/content/Horde';
 import { MasterBehemoth } from '@/components/content/MasterBehemoth';
 import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
+import { Colors } from '@/constants/theme';
 
 export default function AltarScreen() {
   const { region } = useRegion();
   const [altarResponse, setAltarResponse] = useState<any | null>(null);
   const [rollModifier, setRollModifier] = useState<number>(0);
+  const colors = Colors.dark;
 
   const generateAltarResponse = async () => {
     setAltarResponse(null);
@@ -40,98 +42,359 @@ export default function AltarScreen() {
   }
   
   return (
-    <View style={{ flex: 1, paddingTop: 100, width: '100%', alignItems: 'center' }}>
-        <RegionSelector />
-        <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 20 }}>Altar</Text>
-        <View style={{ display: 'flex', flexDirection: 'row', gap: 10, marginBottom: 20 }}>
-            <Text>Roll Modifier: </Text>
-                <TouchableOpacity disabled={rollModifier <= 0} style={styles.plusMinusButton} onPress={decrementRollModifier}><Text style={{ textAlign: 'center' }}>-</Text></TouchableOpacity>
-                 <Text style={{width: 20, textAlign: 'center'}} >{rollModifier}</Text> 
-                <TouchableOpacity style={styles.plusMinusButton} onPress={incrementRollModifier}><Text style={{ textAlign: 'center' }}>+</Text></TouchableOpacity>
+    <LinearGradient
+      colors={colors.backgroundGradient as [string, string, ...string[]]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.container}
+    >
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <RegionSelector />
+          <Text style={styles.title}>Altar</Text>
         </View>
-        {altarResponse ? 
-            <View style={{ flex: 1, width: '100%', paddingHorizontal: 20 }}>
-                {altarResponse.result !== 'Master Behemoth' ? 
-                <>  
-                <Text style={{ marginBottom: 8 }}>
-                    <Text style={styles.labelText}>Altar Response: </Text>
-                    <Text style={{ fontStyle: 'italic'}}>{altarResponse.result}</Text>
-                    {" - "}{altarResponse.altarAction}
-                    </Text>
-                    </>
-                : null
-                }
-                {(altarResponse.result === 'Ambush' && altarResponse.ambush) ? 
-                    <>
-                        <Text style={{...styles.labelText, marginBottom: 8, textAlign: 'center' }}>Ambush Result</Text>
-                        <Horde encounter={altarResponse.ambush} />
-                    </> 
-                : null}
-                {(altarResponse.result === 'Behemoth' && altarResponse.behemoth) ?
-                    <>
-                        <Text style={{...styles.labelText, marginBottom: 8, textAlign: 'center' }}>Behemoth Result</Text>
-                        <Behemoth encounter={altarResponse.behemoth} />
-                    </> 
-                : null}
-                {(altarResponse.result === 'Peril' && altarResponse.peril) ?
-                    <>
-                        <Text style={{...styles.labelText, marginBottom: 8, textAlign: 'center' }}>Peril Result</Text>
-                        <Peril encounter={altarResponse.peril} />
-                    </> 
-                : null}
-                {(altarResponse.result === 'Master Behemoth' && altarResponse.masterBehemoth) ? <MasterBehemoth encounter={altarResponse.masterBehemoth} generateBehemoth={generateBehemoth} />  : null}
-                {altarResponse.reward ? 
-                    <Text style={{ marginVertical: 8 }}>
-                        <Text style={styles.labelText}>Reward: </Text>
-                        <Text style={{ fontStyle: 'italic'}}>{altarResponse.reward}</Text>
-                    </Text> 
-                : null }
-            </View> : <View style={{ flex: 1, width: '100%', paddingHorizontal: 20 }} />
-        }
-        <View style={{ alignItems: 'center', justifyContent: 'center', borderTopWidth: 1, borderTopColor: 'black', height: 80, width: '100%'}}>
-            <View style={{ display: 'flex', flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center' }}>
-                <TouchableOpacity style={styles.dungeonButton} onPress={generateAltarResponse}><Text style={{ textAlign: 'center' }}>Roll Altar</Text></TouchableOpacity>
-                {rollModifier > 0 ? <TouchableOpacity style={styles.dungeonButton} onPress={() => setRollModifier(0)}><Text style={{ textAlign: 'center' }}>Reset Modifier</Text></TouchableOpacity> : <DisabledButton />}
+
+        <View style={styles.modifierSection}>
+          <Text style={styles.modifierLabel}>Roll Modifier</Text>
+          <View style={styles.modifierControls}>
+            <TouchableOpacity 
+              disabled={rollModifier <= 0} 
+              style={[styles.modifierButton, rollModifier <= 0 && styles.modifierButtonDisabled]} 
+              onPress={decrementRollModifier}
+            >
+              <Text style={[styles.modifierButtonText, rollModifier <= 0 && styles.modifierButtonTextDisabled]}>−</Text>
+            </TouchableOpacity>
+            <View style={styles.modifierValue}>
+              <Text style={styles.modifierValueText}>{rollModifier}</Text>
             </View>
-        </View>    
-    </View>
+            <TouchableOpacity 
+              style={styles.modifierButton} 
+              onPress={incrementRollModifier}
+            >
+              <Text style={styles.modifierButtonText}>+</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {altarResponse ? (
+          <View style={styles.responseContainer}>
+            {altarResponse.result !== 'Master Behemoth' && (
+              <View style={styles.responseCard}>
+                <Text style={styles.responseLabel}>Altar Response</Text>
+                <Text style={styles.responseResult}>{altarResponse.result}</Text>
+                <Text style={styles.responseAction}>{altarResponse.altarAction}</Text>
+              </View>
+            )}
+
+            {(altarResponse.result === 'Ambush' && altarResponse.ambush) && (
+              <View style={styles.encounterSection}>
+                <Text style={styles.sectionTitle}>Ambush Result</Text>
+                <Horde encounter={altarResponse.ambush} />
+              </View>
+            )}
+
+            {(altarResponse.result === 'Behemoth' && altarResponse.behemoth) && (
+              <View style={styles.encounterSection}>
+                <Text style={styles.sectionTitle}>Behemoth Result</Text>
+                <Behemoth encounter={altarResponse.behemoth} />
+              </View>
+            )}
+
+            {(altarResponse.result === 'Peril' && altarResponse.peril) && (
+              <View style={styles.encounterSection}>
+                <Text style={styles.sectionTitle}>Peril Result</Text>
+                <Peril encounter={altarResponse.peril} />
+              </View>
+            )}
+
+            {(altarResponse.result === 'Master Behemoth' && altarResponse.masterBehemoth) && (
+              <MasterBehemoth encounter={altarResponse.masterBehemoth} generateBehemoth={generateBehemoth} />
+            )}
+
+            {altarResponse.reward && (
+              <View style={styles.rewardCard}>
+                <Text style={styles.rewardLabel}>Reward</Text>
+                <Text style={styles.rewardValue}>{altarResponse.reward}</Text>
+              </View>
+            )}
+          </View>
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateTitle}>Roll the Altar</Text>
+            <Text style={styles.emptyStateText}>
+              Use the button below to generate an altar response
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+
+      <View style={styles.footer}>
+        <View style={styles.buttonRow}>
+          <LinearGradient
+            colors={colors.accentGradient as [string, string, ...string[]]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.buttonGradient}
+          >
+            <TouchableOpacity 
+              style={styles.primaryButton} 
+              onPress={generateAltarResponse}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.primaryButtonText}>Roll Altar</Text>
+            </TouchableOpacity>
+          </LinearGradient>
+
+          {rollModifier > 0 ? (
+            <TouchableOpacity 
+              style={styles.secondaryButton} 
+              onPress={() => setRollModifier(0)}
+            >
+              <Text style={styles.secondaryButtonText}>Reset Modifier</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity 
+              disabled={true} 
+              style={[styles.secondaryButton, styles.secondaryButtonDisabled]}
+            >
+              <Text style={[styles.secondaryButtonText, styles.secondaryButtonTextDisabled]}>Reset Modifier</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    </LinearGradient>
   );
 }
 
-const DisabledButton = () => {
-    return (
-        <TouchableOpacity disabled={true} style={{...styles.dungeonButton, ...styles.disabledButton}} onPress={() => {}}><Text style={{ ...styles.disabledText, textAlign: 'center' }}>Reset Modifier</Text></TouchableOpacity>
-    )
-}
-
 const styles = StyleSheet.create({
-    titleContainer: {
+    container: {
+        flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
+        paddingHorizontal: 20,
+        paddingTop: 60,
+        paddingBottom: 100,
+    },
+    header: {
+        marginBottom: 24,
+    },
+    title: {
+        fontSize: 32,
+        fontWeight: '700',
+        color: Colors.dark.text,
+        marginTop: 12,
+        marginBottom: 8,
+    },
+    modifierSection: {
+        backgroundColor: 'rgba(21, 21, 32, 0.6)',
+        padding: 20,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: Colors.dark.border,
+        marginBottom: 24,
+    },
+    modifierLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: Colors.dark.textTertiary,
+        marginBottom: 12,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    modifierControls: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        justifyContent: 'center',
+        gap: 16,
     },
-    dungeonButton: {
-        borderColor: 'black',
+    modifierButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 12,
+        backgroundColor: Colors.dark.accent,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: Colors.dark.accent,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    modifierButtonDisabled: {
+        backgroundColor: Colors.dark.backgroundTertiary,
+        shadowOpacity: 0,
+        elevation: 0,
         borderWidth: 1,
-        padding: 10,
-        borderRadius: 5,
-        width: 150
+        borderColor: Colors.dark.border,
     },
-    labelText: {
-        fontWeight: 'bold',
+    modifierButtonText: {
+        fontSize: 24,
+        fontWeight: '600',
+        color: Colors.dark.text,
     },
-    plusMinusButton: {
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderColor: 'black',
+    modifierButtonTextDisabled: {
+        color: Colors.dark.textTertiary,
+    },
+    modifierValue: {
+        minWidth: 60,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    modifierValueText: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: Colors.dark.text,
+    },
+    responseContainer: {
+        width: '100%',
+        gap: 20,
+    },
+    responseCard: {
+        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+        padding: 20,
+        borderRadius: 16,
         borderWidth: 1,
-        borderRadius: 5,
-        top: -8
+        borderColor: Colors.dark.borderSecondary,
+        marginBottom: 20,
     },
-    disabledButton : {
-        borderColor: 'gray',
+    responseLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: Colors.dark.accent,
+        marginBottom: 8,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
-    disabledText: {
-        color: 'gray',
-    }
+    responseResult: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: Colors.dark.accent,
+        fontStyle: 'italic',
+        marginBottom: 8,
+    },
+    responseAction: {
+        fontSize: 16,
+        color: Colors.dark.textSecondary,
+        lineHeight: 24,
+    },
+    encounterSection: {
+        marginBottom: 20,
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: Colors.dark.text,
+        marginBottom: 16,
+        textAlign: 'center',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    rewardCard: {
+        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+        padding: 20,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: Colors.dark.borderSecondary,
+        marginTop: 20,
+    },
+    rewardLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: Colors.dark.accent,
+        marginBottom: 8,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    rewardValue: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: Colors.dark.text,
+    },
+    emptyState: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 64,
+        paddingHorizontal: 32,
+    },
+    emptyStateTitle: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: Colors.dark.text,
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    emptyStateText: {
+        fontSize: 16,
+        color: Colors.dark.textSecondary,
+        textAlign: 'center',
+        lineHeight: 24,
+    },
+    footer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        paddingHorizontal: 20,
+        paddingBottom: 20,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: Colors.dark.border,
+        backgroundColor: Colors.dark.backgroundPrimary,
+    },
+    buttonRow: {
+        flexDirection: 'row',
+        gap: 12,
+        alignItems: 'center',
+    },
+    buttonGradient: {
+        flex: 1,
+        borderRadius: 14,
+        shadowColor: Colors.dark.accent,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.5,
+        shadowRadius: 20,
+        elevation: 8,
+    },
+    primaryButton: {
+        paddingVertical: 16,
+        paddingHorizontal: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 56,
+    },
+    primaryButtonText: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: Colors.dark.text,
+        letterSpacing: 0.5,
+    },
+    secondaryButton: {
+        flex: 1,
+        paddingVertical: 16,
+        paddingHorizontal: 24,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: Colors.dark.borderSecondary,
+        backgroundColor: 'transparent',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 56,
+    },
+    secondaryButtonDisabled: {
+        borderColor: Colors.dark.border,
+        opacity: 0.5,
+    },
+    secondaryButtonText: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: Colors.dark.text,
+        letterSpacing: 0.5,
+    },
+    secondaryButtonTextDisabled: {
+        color: Colors.dark.textTertiary,
+    },
 });

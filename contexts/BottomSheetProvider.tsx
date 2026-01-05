@@ -2,7 +2,9 @@ import React, { createContext, useContext, useRef, ReactNode } from 'react';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
 import { View, Text, StyleSheet } from 'react-native';
 import { TouchableOpacity } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRegion, RegionName } from './RegionContext';
+import { Colors } from '@/constants/theme';
 
 const REGIONS: RegionName[] = ['sundessa', 'mantora', 'torgul', 'ridian', 'jakkar', 'olma'];
 
@@ -48,6 +50,8 @@ export function BottomSheetProvider({ children }: { children: ReactNode }) {
     closeBottomSheet();
   };
 
+  const colors = Colors.dark;
+
   return (
     <BottomSheetContext.Provider value={{ openBottomSheet, closeBottomSheet }}>
       {children}
@@ -57,30 +61,45 @@ export function BottomSheetProvider({ children }: { children: ReactNode }) {
         snapPoints={snapPoints}
         enablePanDownToClose
         backdropComponent={renderBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
       >
-        <BottomSheetView style={styles.bottomSheetContent}>
-          <View style={styles.header}>
-            <Text style={styles.headerText}>Select Region</Text>
-            <TouchableOpacity onPress={closeBottomSheet} style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.radioContainer}>
-            {REGIONS.map((regionOption) => (
-              <TouchableOpacity
-                key={regionOption}
-                style={styles.radioOption}
-                onPress={() => handleRegionSelect(regionOption)}
-              >
-                <View style={styles.radioButton}>
-                  {region === regionOption && <View style={styles.radioButtonSelected} />}
-                </View>
-                <Text style={styles.radioLabel}>{formatRegionName(regionOption)}</Text>
+        <LinearGradient
+          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.header}>
+              <Text style={styles.headerText}>Select Region</Text>
+              <TouchableOpacity onPress={closeBottomSheet} style={styles.closeButton}>
+                <Text style={styles.closeButtonText}>✕</Text>
               </TouchableOpacity>
-            ))}
-          </View>
-        </BottomSheetView>
+            </View>
+            
+            <View style={styles.radioContainer}>
+              {REGIONS.map((regionOption) => {
+                const isSelected = region === regionOption;
+                return (
+                  <TouchableOpacity
+                    key={regionOption}
+                    style={[styles.radioOption, isSelected && styles.radioOptionSelected]}
+                    onPress={() => handleRegionSelect(regionOption)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.radioButton, isSelected && styles.radioButtonSelectedContainer]}>
+                      {isSelected && <View style={styles.radioButtonSelected} />}
+                    </View>
+                    <Text style={[styles.radioLabel, isSelected && styles.radioLabelSelected]}>
+                      {formatRegionName(regionOption)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
       </BottomSheet>
     </BottomSheetContext.Provider>
   );
@@ -95,59 +114,99 @@ export function useBottomSheet() {
 }
 
 const styles = StyleSheet.create({
+  bottomSheetBackground: {
+    backgroundColor: 'transparent',
+  },
+  gradientBackground: {
+    flex: 1,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  handleIndicator: {
+    backgroundColor: Colors.dark.border,
+    width: 40,
+  },
   bottomSheetContent: {
-    padding: 20,
+    padding: 24,
     paddingBottom: 40,
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
-    paddingBottom: 15,
+    marginBottom: 24,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: Colors.dark.border,
   },
   headerText: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontWeight: '700',
+    color: Colors.dark.text,
   },
   closeButton: {
-    width: 30,
-    height: 30,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 12,
+    backgroundColor: Colors.dark.backgroundTertiary,
   },
   closeButtonText: {
     fontSize: 24,
-    color: '#666',
+    color: Colors.dark.textSecondary,
+    fontWeight: '300',
   },
   radioContainer: {
-    gap: 15,
+    gap: 12,
   },
   radioOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: Colors.dark.backgroundTertiary,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  radioOptionSelected: {
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    borderColor: Colors.dark.borderSecondary,
   },
   radioButton: {
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#333',
-    marginRight: 12,
+    borderColor: Colors.dark.border,
+    marginRight: 16,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  radioButtonSelectedContainer: {
+    borderColor: Colors.dark.accent,
   },
   radioButtonSelected: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#333',
+    backgroundColor: Colors.dark.accent,
+    shadowColor: Colors.dark.accent,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
+    elevation: 4,
   },
   radioLabel: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: '500',
+    color: Colors.dark.textSecondary,
+  },
+  radioLabelSelected: {
+    color: Colors.dark.text,
+    fontWeight: '600',
   },
 });
 

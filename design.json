@@ -1,0 +1,569 @@
+{
+  "designSystem": {
+    "name": "AI Art Generation Design System",
+    "version": "1.0.0",
+    "description": "High-level design guidelines for a premium AI art generation application with a dark, futuristic aesthetic featuring glowing purple accents and modern mobile-first UI components.",
+    
+    "designPhilosophy": {
+      "corePrinciples": [
+        "Dark-first design with vibrant accent colors creates visual hierarchy and reduces eye strain",
+        "Glowing and neon effects on interactive elements provide premium, futuristic feel",
+        "Generous white space and card-based layouts ensure content breathability",
+        "Purple as the primary accent creates a magical, creative, and tech-forward brand identity",
+        "Mobile-first approach with touch-optimized interactive areas",
+        "Visual feedback through glowing states indicates interactivity and importance"
+      ],
+      "aesthetic": "Premium, futuristic, magical, tech-forward, creative, modern",
+      "targetAudience": "Creative professionals and enthusiasts using AI art generation tools"
+    },
+
+    "colorSystem": {
+      "mode": "Dark-first with dark mode as primary, light mode optional",
+      "palette": {
+        "background": {
+          "primary": {
+            "description": "Main app background - dark blue to purple gradient",
+            "value": "#0a0e27 to #1a1a3e (gradient)",
+            "usage": "Primary screen backgrounds, creates depth and sophistication"
+          },
+          "secondary": {
+            "description": "Card and container backgrounds",
+            "value": "#151520 to #1f1f3a (slightly lighter gradient)",
+            "usage": "Content cards, modal backgrounds, elevated surfaces"
+          },
+          "tertiary": {
+            "description": "Input fields and inactive surfaces",
+            "value": "#0f0f1f",
+            "usage": "Text inputs, disabled states, subtle backgrounds"
+          }
+        },
+        "accent": {
+          "primary": {
+            "description": "Primary brand color - glowing purple",
+            "value": "#8b5cf6 to #a78bfa (gradient with glow)",
+            "usage": "Primary CTAs, selected states, active navigation, glowing buttons, highlights"
+          },
+          "secondary": {
+            "description": "Purple variants for different states",
+            "value": {
+              "light": "#c4b5fd",
+              "medium": "#8b5cf6",
+              "dark": "#6d28d9",
+              "glow": "rgba(139, 92, 246, 0.3) with box-shadow"
+            },
+            "usage": "Hover states, secondary actions, subtle accents"
+          }
+        },
+        "text": {
+          "primary": {
+            "description": "Primary text color - high contrast white",
+            "value": "#ffffff",
+            "usage": "Headings, primary content, important labels"
+          },
+          "secondary": {
+            "description": "Secondary text - soft white/gray",
+            "value": "#e5e7eb to #9ca3af",
+            "usage": "Body text, descriptions, subtitles, metadata"
+          },
+          "tertiary": {
+            "description": "Muted text for less important information",
+            "value": "#6b7280",
+            "usage": "Placeholders, helper text, character counts, timestamps"
+          },
+          "inverse": {
+            "description": "Text on colored backgrounds",
+            "value": "#ffffff",
+            "usage": "Text on buttons, badges, colored surfaces"
+          }
+        },
+        "status": {
+          "success": "#10b981",
+          "warning": "#f59e0b",
+          "error": "#ef4444",
+          "info": "#3b82f6"
+        },
+        "border": {
+          "primary": "rgba(255, 255, 255, 0.1)",
+          "secondary": "rgba(139, 92, 246, 0.3)",
+          "glow": "rgba(139, 92, 246, 0.5) with glow effect"
+        }
+      },
+      "effects": {
+        "glow": {
+          "description": "Purple glow effect for primary interactive elements",
+          "implementation": "box-shadow: 0 0 20px rgba(139, 92, 246, 0.5), 0 0 40px rgba(139, 92, 246, 0.3)",
+          "usage": "Primary buttons, selected states, active navigation items, featured elements"
+        },
+        "gradient": {
+          "description": "Gradient overlays for depth",
+          "background": "linear-gradient(135deg, #0a0e27 0%, #1a1a3e 50%, #0a0e27 100%)",
+          "accent": "linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)"
+        }
+      }
+    },
+
+    "typography": {
+      "fontFamily": {
+        "primary": "System font stack - SF Pro (iOS), Roboto (Android), system-ui (Web)",
+        "fallback": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        "mono": "SF Mono, Menlo, Monaco, 'Courier New', monospace"
+      },
+      "scale": {
+        "display": {
+          "size": "32-40px",
+          "weight": "700-800 (Bold/Extra Bold)",
+          "lineHeight": "1.2",
+          "usage": "Hero titles, major screen headings (rare)"
+        },
+        "h1": {
+          "size": "28-32px",
+          "weight": "700 (Bold)",
+          "lineHeight": "1.25",
+          "usage": "Screen titles, main headings"
+        },
+        "h2": {
+          "size": "22-24px",
+          "weight": "600-700 (Semi-Bold/Bold)",
+          "lineHeight": "1.3",
+          "usage": "Section headers (e.g., 'FOR YOU', 'LANDSCAPES')"
+        },
+        "h3": {
+          "size": "18-20px",
+          "weight": "600 (Semi-Bold)",
+          "lineHeight": "1.35",
+          "usage": "Card titles, subsection headers"
+        },
+        "body": {
+          "size": "16px",
+          "weight": "400 (Regular)",
+          "lineHeight": "1.5",
+          "usage": "Primary body text, descriptions"
+        },
+        "bodySmall": {
+          "size": "14px",
+          "weight": "400 (Regular)",
+          "lineHeight": "1.5",
+          "usage": "Secondary text, metadata, subtitles"
+        },
+        "caption": {
+          "size": "12px",
+          "weight": "400 (Regular)",
+          "lineHeight": "1.4",
+          "usage": "Helper text, character counts, labels, timestamps"
+        },
+        "button": {
+          "size": "16-18px",
+          "weight": "600 (Semi-Bold)",
+          "lineHeight": "1.2",
+          "usage": "Button labels, CTA text"
+        }
+      },
+      "style": {
+        "emphasis": "Use italic sparingly for metadata and secondary information",
+        "capitalization": "UPPERCASE for section headers, Title Case for buttons, sentence case for body"
+      }
+    },
+
+    "spacing": {
+      "scale": {
+        "xs": "4px",
+        "sm": "8px",
+        "md": "16px",
+        "lg": "24px",
+        "xl": "32px",
+        "2xl": "48px",
+        "3xl": "64px"
+      },
+      "layout": {
+        "screenPadding": "16-20px horizontal padding on all screens",
+        "sectionSpacing": "24-32px vertical spacing between major sections",
+        "cardSpacing": "12-16px gap between cards in grids/lists",
+        "cardPadding": "16-20px padding inside cards",
+        "buttonPadding": "14-18px vertical, 24-32px horizontal for primary buttons",
+        "inputPadding": "14-16px vertical, 16-20px horizontal for text inputs"
+      }
+    },
+
+    "layout": {
+      "grid": {
+        "columns": "Flexible grid system - typically 1-2 columns on mobile, adapts to content",
+        "cardWidth": "Full width on mobile (minus padding), up to 50% for 2-column layouts"
+      },
+      "structure": {
+        "header": {
+          "height": "44-56px + status bar",
+          "components": ["Status bar (time, battery, signal)", "Screen title (centered or left-aligned)", "Action icons (right side)"],
+          "spacing": "8-12px between elements"
+        },
+        "content": {
+          "description": "Scrollable main content area",
+          "spacing": "16-20px horizontal padding, 16-24px vertical spacing"
+        },
+        "footer": {
+          "height": "64-80px (including safe area)",
+          "description": "Fixed bottom navigation bar with 3 primary tabs",
+          "spacing": "Equal spacing between tab icons"
+        }
+      },
+      "breakpoints": {
+        "mobile": "< 768px (primary focus)",
+        "tablet": "768px - 1024px",
+        "desktop": "> 1024px (if applicable)"
+      }
+    },
+
+    "components": {
+      "button": {
+        "primary": {
+          "description": "Main call-to-action button - large, glowing purple",
+          "style": {
+            "background": "Purple gradient (#8b5cf6 to #a78bfa) with glow effect",
+            "text": "White, semi-bold, 16-18px",
+            "padding": "14-18px vertical, 24-32px horizontal",
+            "borderRadius": "12-16px (rounded)",
+            "minHeight": "48-56px",
+            "effects": "Glowing box-shadow, smooth transitions",
+            "states": {
+              "default": "Full glow, 100% opacity",
+              "pressed": "Slightly reduced glow, 95% opacity",
+              "disabled": "50% opacity, no glow, gray color"
+            }
+          }
+        },
+        "secondary": {
+          "description": "Secondary actions, pill-shaped buttons",
+          "style": {
+            "background": "Transparent or subtle purple tint",
+            "border": "1-2px solid rgba(139, 92, 246, 0.3) or transparent",
+            "text": "Purple or white",
+            "padding": "8-12px vertical, 16-24px horizontal",
+            "borderRadius": "20-24px (pill-shaped)",
+            "minHeight": "36-44px"
+          }
+        },
+        "text": {
+          "description": "Text-only buttons for less prominent actions",
+          "style": {
+            "text": "Purple (#8b5cf6), no background",
+            "padding": "8px",
+            "minHeight": "44px (touch target)"
+          }
+        },
+        "icon": {
+          "description": "Icon-only buttons for actions",
+          "style": {
+            "size": "44x44px minimum touch target",
+            "padding": "10-12px",
+            "color": "White or purple depending on context"
+          }
+        }
+      },
+
+      "input": {
+        "text": {
+          "description": "Text input fields for prompts and forms",
+          "style": {
+            "background": "Dark background (#0f0f1f or similar)",
+            "border": "1px solid rgba(255, 255, 255, 0.1) or subtle purple border",
+            "borderRadius": "12px",
+            "padding": "14-16px vertical, 16-20px horizontal",
+            "text": "White, 16px",
+            "placeholder": "Gray (#6b7280), italic",
+            "minHeight": "48-56px",
+            "states": {
+              "focused": "Purple border with subtle glow, border color: #8b5cf6"
+            }
+          }
+        },
+        "textarea": {
+          "description": "Multi-line text input for longer content",
+          "style": {
+            "extends": "text input",
+            "minHeight": "120-160px",
+            "maxHeight": "400px (scrollable)"
+          }
+        }
+      },
+
+      "card": {
+        "artwork": {
+          "description": "Primary content card for displaying artwork",
+          "style": {
+            "background": "Transparent or subtle dark background",
+            "borderRadius": "16-20px",
+            "overflow": "hidden",
+            "aspectRatio": "Varies based on content (typically 4:3 or 1:1)",
+            "padding": "0px (image fills card)",
+            "spacing": "12-16px margin between cards"
+          },
+          "content": {
+            "image": "Full-width, rounded corners at top",
+            "overlay": "Gradient or semi-transparent overlay for text on images",
+            "metadata": {
+              "position": "Below or overlaid on image",
+              "padding": "12-16px",
+              "text": {
+                "title": "White, 16-18px, semi-bold",
+                "subtitle": "Gray, 14px",
+                "label": "Purple badge or tag, 12px"
+              }
+            }
+          }
+        },
+        "style": {
+          "description": "Style selection cards (circular)",
+          "style": {
+            "shape": "Circle",
+            "size": "120-140px diameter",
+            "border": "2-3px solid rgba(139, 92, 246, 0.5) when selected",
+            "selected": "Purple glow effect, checkmark overlay",
+            "spacing": "16-24px between cards"
+          }
+        },
+        "featured": {
+          "description": "Featured style cards with images",
+          "style": {
+            "extends": "artwork card",
+            "badge": {
+              "label": "'Featured style' - small purple badge",
+              "position": "Top-left or top-right of image"
+            },
+            "action": {
+              "button": "Purple pill button with 'Try' label",
+              "position": "Overlaid on image or below"
+            }
+          }
+        }
+      },
+
+      "badge": {
+        "tag": {
+          "description": "Pill-shaped tags for categories and suggestions",
+          "style": {
+            "background": "Purple with subtle glow or transparent with purple border",
+            "text": "White or purple, 12-14px",
+            "padding": "6-8px vertical, 12-16px horizontal",
+            "borderRadius": "16-20px (pill)",
+            "margin": "4-6px"
+          }
+        },
+        "label": {
+          "description": "Small labels for metadata",
+          "style": {
+            "text": "Gray or purple, 12px",
+            "background": "Optional subtle background",
+            "padding": "4-6px"
+          }
+        }
+      },
+
+      "navigation": {
+        "tabs": {
+          "description": "Bottom navigation bar with 3 primary tabs",
+          "style": {
+            "background": "Dark background matching app theme",
+            "height": "64-80px (including safe area)",
+            "border": "Optional subtle top border (rgba(255, 255, 255, 0.1))",
+            "spacing": "Equal distribution of tabs across width"
+          },
+          "tab": {
+            "icon": {
+              "size": "24-28px",
+              "default": "Gray (#9ca3af)",
+              "selected": "Purple (#8b5cf6) with glow effect"
+            },
+            "label": {
+              "size": "12px",
+              "weight": "500-600",
+              "default": "Gray",
+              "selected": "Purple"
+            },
+            "spacing": "4-6px between icon and label"
+          }
+        },
+        "pills": {
+          "description": "Pill-shaped navigation tabs (Feed, Categories)",
+          "style": {
+            "background": "Transparent with purple border for selected",
+            "selected": "Purple background or border, white text",
+            "unselected": "Transparent, gray text",
+            "padding": "8-12px vertical, 20-24px horizontal",
+            "borderRadius": "20-24px (pill)",
+            "spacing": "8-12px between pills"
+          }
+        }
+      },
+
+      "modal": {
+        "overlay": {
+          "description": "Modal and overlay backgrounds",
+          "style": {
+            "background": "rgba(0, 0, 0, 0.7-0.9) with blur effect",
+            "fullScreen": "Extends to edges of screen"
+          }
+        },
+        "content": {
+          "description": "Modal content container",
+          "style": {
+            "background": "Dark gradient background matching app theme",
+            "borderRadius": "20-24px top corners, full radius if centered modal",
+            "padding": "20-24px",
+            "maxHeight": "90% of screen height (scrollable)"
+          }
+        },
+        "header": {
+          "closeButton": {
+            "icon": "X",
+            "size": "44x44px touch target",
+            "color": "White or gray",
+            "position": "Top-right"
+          }
+        }
+      },
+
+      "list": {
+        "feed": {
+          "description": "Vertical scrollable feed of content",
+          "style": {
+            "spacing": "12-16px between items",
+            "padding": "16-20px horizontal, 16px vertical",
+            "scroll": "Smooth scrolling with momentum"
+          }
+        },
+        "grid": {
+          "description": "Grid layout for multiple items",
+          "style": {
+            "columns": "1-2 columns on mobile",
+            "gap": "12-16px",
+            "padding": "16-20px"
+          }
+        }
+      },
+
+      "header": {
+        "screen": {
+          "description": "Screen header with title and actions",
+          "style": {
+            "height": "56-64px",
+            "background": "Transparent or matching app background",
+            "padding": "8-12px horizontal",
+            "title": {
+              "size": "28-32px",
+              "weight": "700",
+              "color": "White",
+              "alignment": "Center or left"
+            },
+            "subtitle": {
+              "size": "14px",
+              "weight": "400",
+              "color": "Gray (#9ca3af)",
+              "position": "Below title, 4-6px spacing"
+            },
+            "actions": {
+              "spacing": "12-16px from title",
+              "iconSize": "24-28px"
+            }
+          }
+        }
+      },
+
+      "section": {
+        "header": {
+          "description": "Section headers (FOR YOU, LANDSCAPES, etc.)",
+          "style": {
+            "text": "UPPERCASE, 18-22px, semi-bold to bold, white",
+            "spacing": "24-32px top margin, 16px bottom margin",
+            "padding": "16-20px horizontal"
+          }
+        }
+      },
+
+      "divider": {
+        "description": "Visual separators between sections",
+        "style": {
+          "height": "1px",
+          "color": "rgba(255, 255, 255, 0.1)",
+          "margin": "24-32px vertical"
+        }
+      },
+
+      "empty": {
+        "state": {
+          "description": "Empty state illustrations and messages",
+          "style": {
+            "text": {
+              "title": "White, 20-24px, semi-bold",
+              "description": "Gray, 16px",
+              "alignment": "Center"
+            },
+            "icon": {
+              "size": "64-80px",
+              "color": "Purple with glow"
+            },
+            "spacing": "32-48px vertical padding"
+          }
+        }
+      }
+    },
+
+    "interactions": {
+      "animations": {
+        "duration": {
+          "fast": "150-200ms",
+          "normal": "250-300ms",
+          "slow": "400-500ms"
+        },
+        "easing": {
+          "default": "ease-in-out or cubic-bezier(0.4, 0, 0.2, 1)",
+          "bounce": "cubic-bezier(0.68, -0.55, 0.265, 1.55)"
+        },
+        "transitions": {
+          "button": "Smooth opacity and glow transitions on press",
+          "card": "Subtle scale (0.98) on press for feedback",
+          "navigation": "Smooth color and glow transitions",
+          "modal": "Slide up from bottom or fade in"
+        }
+      },
+      "feedback": {
+        "haptic": "Light haptic feedback on button presses and selections",
+        "visual": "Glow effects, color changes, scale animations",
+        "loading": "Purple shimmer or spinner matching brand colors"
+      }
+    },
+
+    "accessibility": {
+      "contrast": {
+        "minimum": "WCAG AA compliance - 4.5:1 for text, 3:1 for UI components",
+        "recommended": "WCAG AAA where possible - 7:1 for text"
+      },
+      "touch": {
+        "minimumTarget": "44x44px for all interactive elements",
+        "recommended": "48x48px for primary actions"
+      },
+      "typography": {
+        "scaling": "Support dynamic type scaling",
+        "readability": "Minimum 16px for body text, 14px for secondary"
+      }
+    },
+
+    "implementation": {
+      "guidelines": {
+        "purpleGlow": "Use sparingly - only for primary CTAs, selected states, and active navigation. Creates hierarchy.",
+        "spacing": "Be generous with whitespace - content should breathe. Use consistent spacing scale.",
+        "cards": "Rounded corners (16-20px) create modern, friendly feel. Use subtle shadows or borders for depth.",
+        "typography": "Maintain clear hierarchy. Use weight and size to guide attention, not just color.",
+        "gradients": "Use subtle gradients for backgrounds to add depth without distraction.",
+        "consistency": "Maintain consistent component styles across all screens. Purple accent should be used consistently.",
+        "content": "Let artwork and generated content be the hero. UI should complement, not compete."
+      },
+      "patterns": {
+        "primaryAction": "Always use glowing purple button for main CTA on screen",
+        "secondaryAction": "Use pill-shaped buttons with purple border or transparent background",
+        "navigation": "Bottom navigation always visible, purple glow indicates active tab",
+        "cards": "Use rounded cards with proper spacing - no sharp corners unless intentional",
+        "inputs": "Dark backgrounds with subtle borders, purple glow on focus",
+        "sections": "UPPERCASE section headers with generous spacing create clear content hierarchy"
+      }
+    }
+  }
+}
