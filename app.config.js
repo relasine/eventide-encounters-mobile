@@ -35,7 +35,7 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        backgroundColor: '#E6F4FE',
+        backgroundColor: '#2C3E50',
         foregroundImage: './assets/images/android-icon-foreground.png',
         backgroundImage: './assets/images/android-icon-background.png',
         monochromeImage: './assets/images/android-icon-monochrome.png',
