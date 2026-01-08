@@ -28,8 +28,8 @@ async function generateIcons() {
       .toFile(path.join(outputDir, 'android-icon-foreground.png'));
     console.log('✓ Generated android-icon-foreground.png (1024x1024)');
 
-    // Android adaptive icon background (solid color matching the gradient)
-    const backgroundColor = '#1a3a4e'; // Deep teal-green from sky gradient
+    // Android adaptive icon background (solid color matching the design theme)
+    const backgroundColor = '#0f1420'; // Dark purple-blue matching design theme (#0a0e27 to #1a1a3e)
     await sharp({
       create: {
         width: 1024,

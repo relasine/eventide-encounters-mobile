@@ -1,0 +1,74 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Dark gradient background -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0e27;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1a1a3e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0a0e27;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Purple gradient for text -->
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#a78bfa;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Glow filter for the text -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+      <feGaussianBlur stdDeviation="8" result="coloredBlur2"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur2"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Stronger glow for outer effect -->
+    <filter id="outerGlow">
+      <feGaussianBlur stdDeviation="12" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background with gradient -->
+  <rect width="1024" height="1024" fill="url(#bgGradient)" rx="180" ry="180"/>
+  
+  <!-- EE Text with glow effect -->
+  <text 
+    x="512" 
+    y="512" 
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif" 
+    font-size="480" 
+    font-weight="800" 
+    text-anchor="middle" 
+    dominant-baseline="central"
+    fill="url(#textGradient)"
+    filter="url(#glow)"
+    letter-spacing="-24">
+    EE
+  </text>
+  
+  <!-- Additional subtle outer glow layer -->
+  <text 
+    x="512" 
+    y="512" 
+    font-family="system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif" 
+    font-size="480" 
+    font-weight="800" 
+    text-anchor="middle" 
+    dominant-baseline="central"
+    fill="url(#textGradient)"
+    filter="url(#outerGlow)"
+    opacity="0.5"
+    letter-spacing="-24">
+    EE
+  </text>
+</svg>
+
