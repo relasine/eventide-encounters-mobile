@@ -147,3 +147,8 @@ export type PerilDungeon = DungeonWithImage & {
     dungeonNumber: number
     peril: Peril
 }
+
+export type BacktrackResult = {
+    ambushed: boolean;
+    ambushResult: Enemy | null;
+}

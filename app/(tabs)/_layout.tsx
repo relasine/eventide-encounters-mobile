@@ -87,6 +87,19 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="backtrack"
+        options={{
+          title: 'Backtrack',
+          tabBarIcon: ({ color, focused }) => (
+            <IconSymbol 
+              size={focused ? 26 : 24} 
+              name="figure.walk" 
+              color={color} 
+            />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
