@@ -70,7 +70,6 @@ export default function BacktrackScreen() {
                 ]}>
                     <View style={styles.header}>
                         <RegionSelector />
-                        <Text style={styles.title}>Backtrack</Text>
                     </View>
 
                 {isLoading ? (

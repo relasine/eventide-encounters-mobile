@@ -72,7 +72,6 @@ export default function TreasureScreen() {
                 ]}>
                     <View style={styles.header}>
                         <RegionSelector />
-                        <Text style={styles.title}>Treasure</Text>
                     </View>
 
                 {isLoading ? (

@@ -137,8 +137,6 @@ export default function AltarScreen() {
               </View>
             </View>
           </View>
-          <Text style={styles.title}>Altar</Text>
-
           {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.accent} />

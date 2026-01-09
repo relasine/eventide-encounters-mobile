@@ -67,8 +67,9 @@ export default function SearchScreen() {
                     isTablet && styles.contentWrapperTablet
                 ]}>
                     <View style={styles.header}>
-                        <RegionSelector />
-                        <Text style={styles.title}>Search</Text>
+                        <View style={styles.headerLeft}>
+                            <RegionSelector />
+                        </View>
                     </View>
 
                 {isLoading ? (
@@ -164,7 +165,13 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
         marginBottom: 24,
+    },
+    headerLeft: {
+        flex: 1,
     },
     title: {
         fontSize: 32,
