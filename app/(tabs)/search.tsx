@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
+import { RollSelector } from '@/components/RollSelector';
 import { Colors } from '@/constants/theme';
 import { API_KEY, API_URL } from '@/constants';
 import { useResponsive } from '@/hooks/use-responsive';
@@ -70,6 +71,7 @@ export default function SearchScreen() {
                         <View style={styles.headerLeft}>
                             <RegionSelector />
                         </View>
+                        <RollSelector />
                     </View>
 
                 {isLoading ? (

@@ -11,6 +11,7 @@ import { BehemothDungeon, GeneratedDungeon, EnemyDungeon, EventDungeon, PerilDun
 import { Horde } from '../../components/content/Horde';
 import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
+import { RollSelector } from '@/components/RollSelector';
 import { Colors } from '@/constants/theme';
 import { API_KEY, API_URL } from '@/constants';
 import { useResponsive } from '@/hooks/use-responsive';
@@ -75,6 +76,7 @@ export default function HomeScreen() {
         ]}>
           <View style={styles.header}>
             <RegionSelector />
+            <RollSelector />
           </View>
 
           <View style={styles.content}>
@@ -228,6 +230,9 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   content: {
     flex: 1,

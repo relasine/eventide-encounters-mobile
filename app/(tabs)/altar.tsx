@@ -8,6 +8,7 @@ import { Horde } from '../../components/content/Horde';
 import { MasterBehemoth } from '@/components/content/MasterBehemoth';
 import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
+import { RollSelector } from '@/components/RollSelector';
 import { Colors } from '@/constants/theme';
 import { API_KEY, API_URL } from '@/constants';
 import { useResponsive } from '@/hooks/use-responsive';
@@ -114,27 +115,34 @@ export default function AltarScreen() {
           isTablet && styles.contentWrapperTablet
         ]}>
           <View style={styles.header}>
-            <RegionSelector />
-            <View style={styles.modifierContainer}>
-              <Text style={styles.modifierLabel}>Modifier</Text>
-              <View style={styles.modifierControls}>
-                <TouchableOpacity 
-                  disabled={rollModifier <= 0} 
-                  style={[styles.modifierButton, rollModifier <= 0 && styles.modifierButtonDisabled]} 
-                  onPress={decrementRollModifier}
-                >
-                  <Text style={[styles.modifierButtonText, rollModifier <= 0 && styles.modifierButtonTextDisabled]}>−</Text>
-                </TouchableOpacity>
-                <View style={styles.modifierValue}>
-                  <Text style={styles.modifierValueText}>{rollModifier}</Text>
-                </View>
-                <TouchableOpacity 
-                  style={styles.modifierButton} 
-                  onPress={incrementRollModifier}
-                >
-                  <Text style={styles.modifierButtonText}>+</Text>
-                </TouchableOpacity>
+            <View style={styles.headerLeft}>
+              <View style={styles.regionButtonWrapper}>
+                <RegionSelector />
               </View>
+              <View style={styles.modifierContainer}>
+                <Text style={styles.modifierLabel}>Modifier</Text>
+                <View style={styles.modifierControls}>
+                  <TouchableOpacity 
+                    disabled={rollModifier <= 0} 
+                    style={[styles.modifierButton, rollModifier <= 0 && styles.modifierButtonDisabled]} 
+                    onPress={decrementRollModifier}
+                  >
+                    <Text style={[styles.modifierButtonText, rollModifier <= 0 && styles.modifierButtonTextDisabled]}>−</Text>
+                  </TouchableOpacity>
+                  <View style={styles.modifierValue}>
+                    <Text style={styles.modifierValueText}>{rollModifier}</Text>
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.modifierButton} 
+                    onPress={incrementRollModifier}
+                  >
+                    <Text style={styles.modifierButtonText}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+            <View style={styles.rollButtonWrapper}>
+              <RollSelector />
             </View>
           </View>
           {isLoading ? (
@@ -273,11 +281,23 @@ const styles = StyleSheet.create({
         width: '100%',
     },
   header: {
-    flexDirection: 'column',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 16,
     width: '100%',
+  },
+  headerLeft: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
     gap: 16,
+  },
+  regionButtonWrapper: {
+    marginBottom: -16,
+  },
+  rollButtonWrapper: {
+    alignItems: 'flex-start',
+    marginBottom: -16,
   },
   modifierContainer: {
     alignItems: 'flex-start',

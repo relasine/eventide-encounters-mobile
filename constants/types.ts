@@ -152,3 +152,5 @@ export type BacktrackResult = {
     ambushed: boolean;
     ambushResult: Enemy | null;
 }
+
+export type randomRolls = "d6" | "2d6" |"2d6^" 
