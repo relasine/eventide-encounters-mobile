@@ -273,14 +273,14 @@ const styles = StyleSheet.create({
         width: '100%',
     },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
     alignItems: 'flex-start',
     marginBottom: 16,
     width: '100%',
+    gap: 16,
   },
   modifierContainer: {
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
   },
   modifierLabel: {
     fontSize: 10,
