@@ -21,7 +21,7 @@ export default function HomeScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const colors = Colors.dark;
-  const { isTablet, width } = useResponsive();
+  const { isTablet } = useResponsive();
 
   const generateDungeon = async () => {
     setIsLoading(true);
