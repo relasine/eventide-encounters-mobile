@@ -4,7 +4,6 @@ import { Colors } from "@/constants/theme"
 
 export const Behemoth = (props: { encounter: BehemothType, isAltar?: boolean }) => {
     const { encounter, isAltar } = props;
-    console.log(encounter);
     return (
         <View style={styles.container}>
             <View style={styles.header}>

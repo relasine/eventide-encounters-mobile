@@ -21,10 +21,15 @@ export const Forsaken = (props: { encounter: Enemy }) => {
             
             <Text style={styles.description}>{encounter.description}</Text>
             
-            <View style={styles.blunderSection}>
-                <Text style={styles.blunderLabel}>Blunder</Text>
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Blunder</Text>
                 <Text style={styles.blunderName}>{encounter.blunder.name}</Text>
                 <Text style={styles.blunderAction}>{encounter.blunder.action}</Text>
+            </View>
+
+            <View style={styles.rewardSection}>
+                <Text style={styles.rewardLabel}>Reward</Text>
+                <Text style={styles.rewardValue}>{encounter.reward}</Text>
             </View>
         </View>
     )
@@ -90,6 +95,7 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         borderWidth: 1,
         borderColor: Colors.dark.borderSecondary,
+        marginBottom: 16
     },
     blunderLabel: {
         fontSize: 12,
@@ -110,5 +116,39 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: Colors.dark.textSecondary,
         lineHeight: 24,
+    },
+    rewardSection: {
+        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: Colors.dark.borderSecondary,
+    },
+    rewardLabel: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: Colors.dark.accent,
+        marginBottom: 6,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+    },
+    rewardValue: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: Colors.dark.text,
+    },
+    section: {
+        marginBottom: 20,
+        borderTopWidth: 1,
+        borderTopColor: Colors.dark.border,
+        paddingTop: 16,
+    },
+    sectionTitle: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: Colors.dark.textTertiary,
+        marginBottom: 8,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
 });
