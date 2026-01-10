@@ -27,10 +27,10 @@ export type Enemy = {
     qty: string
     blunder: Blunder
     description: string
+    reward: string
 }
 
 export type Behemoth = Omit<Enemy, "qty"> & {
-    reward: string
     health: number
     attacksPerRound: number
     attacks: undefined | {
