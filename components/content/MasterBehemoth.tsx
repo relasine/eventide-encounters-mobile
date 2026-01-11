@@ -4,32 +4,37 @@ import { useState } from 'react'
 import { Ability, MasterBehemoth as MasterBehemothType, Escalation as EscalationType, BackInTown as BackInTownType } from "@/constants/types"
 import { Colors } from "@/constants/theme"
 
-export const MasterBehemoth = (props: { encounter: MasterBehemothType, generateBehemoth: () => void }) => {
-    const { encounter, generateBehemoth } = props;
+export const MasterBehemoth = (props: { encounter: MasterBehemothType, generateBehemoth: () => void, isBestiaryEntry?: boolean }) => {
+    const { encounter, generateBehemoth, isBestiaryEntry = false     } = props;
     const colors = Colors.dark;
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
     return (
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
             <View style={styles.container}>
-                <View style={styles.header}>
-                    <Text style={styles.title}>{encounter.name}</Text>
-                </View>
+                {!isBestiaryEntry && (
+                    <>
+                        <View style={styles.header}>
+                            <Text style={styles.title}>{encounter.name}</Text>
+                        </View>
 
-                <LinearGradient
-                    colors={colors.accentGradient as [string, string, ...string[]]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.buttonGradient}
-                >
-                    <TouchableOpacity 
-                        style={styles.generateButton} 
-                        onPress={generateBehemoth}
-                        activeOpacity={0.9}
-                    >
-                        <Text style={styles.generateButtonText}>Roll for Behemoth</Text>
-                    </TouchableOpacity>
-                </LinearGradient>
+                        
+                            <LinearGradient
+                            colors={colors.accentGradient as [string, string, ...string[]]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.buttonGradient}
+                        >
+                            <TouchableOpacity 
+                                style={styles.generateButton} 
+                                onPress={generateBehemoth}
+                                activeOpacity={0.9}
+                            >
+                                <Text style={styles.generateButtonText}>Roll for Behemoth</Text>
+                            </TouchableOpacity>
+                        </LinearGradient>
+                    </>
+                )}
 
                 <View style={styles.descriptionSection}>
                     <TouchableOpacity 

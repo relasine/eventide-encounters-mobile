@@ -191,7 +191,7 @@ export default function HomeScreen() {
             activeOpacity={0.9}
             disabled={isLoading}
           >
-            <Text style={styles.generateButtonText}>Generate Dungeon</Text>
+            <Text style={styles.generateButtonText}>Explore</Text>
           </TouchableOpacity>
         </LinearGradient>
       </View>
