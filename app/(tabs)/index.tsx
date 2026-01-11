@@ -7,7 +7,7 @@ import { Forsaken } from '../../components/content/Forsaken';
 import { Behemoth } from '../../components/content/Behemoth';
 import { Peril } from '../../components/content/Peril';
 import { Event } from '../../components/content/Event';
-import { BehemothDungeon, GeneratedDungeon, EnemyDungeon, EventDungeon, PerilDungeon } from '@/constants/types';
+import { BehemothDungeon, GeneratedDungeon, EnemyDungeon, EventDungeon, PerilDungeon, BacktrackResult } from '@/constants/types';
 import { Horde } from '../../components/content/Horde';
 import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
@@ -19,6 +19,7 @@ import { useResponsive } from '@/hooks/use-responsive';
 export default function HomeScreen() {
   const { region } = useRegion();
   const [encounter, setEncounter] = useState<GeneratedDungeon | null>(null);
+  const [backtrackResult, setBacktrackResult] = useState<BacktrackResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const colors = Colors.dark;
@@ -28,6 +29,7 @@ export default function HomeScreen() {
     setIsLoading(true);
     setEncounter(null);
     setError(null);
+    setBacktrackResult(null);
     try {
       const response = await fetch(`${API_URL}/api/v1/dungeon/${region}`, {
         headers: {
@@ -55,6 +57,39 @@ export default function HomeScreen() {
       setIsLoading(false);
     }
   }
+
+  const backtrack = async () => {
+    setIsLoading(true);
+    setEncounter(null);
+    setBacktrackResult(null);
+    setError(null);
+    try {
+        const response = await fetch(`${API_URL}/api/v1/backtrack/${region}`, {
+            headers: {
+                'x-api-key': API_KEY,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to backtrack: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data) {
+            throw new Error('Invalid response format from server');
+        }
+        
+        setBacktrackResult(data);
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+        setError(errorMessage);
+        console.error('Error backtracking:', error);
+    } finally {
+        setIsLoading(false);
+    }
+}
   
   return (
     <LinearGradient
@@ -163,6 +198,24 @@ export default function HomeScreen() {
                 ) : null}
               </View>
             </View>
+          ) : backtrackResult ? (
+            <View style={styles.resultCard}>
+              {backtrackResult.ambushResult === null && !backtrackResult.ambushed ? (
+                <View style={styles.safeMessageContainer}>
+                  <Text style={styles.safeMessage}>
+                    You backtrack safely without attracting unwanted attention.
+                  </Text>
+                </View>
+              ) : null}
+              {backtrackResult.ambushResult !== null && backtrackResult.ambushed ? (
+                <View>
+                    <Text style={styles.ambushTitle}>You have been ambushed!</Text>
+                    <Text style={styles.ambushDescription}>You are preemptively attacked by four enemies from the horde!</Text>
+                    <Text style={styles.ambushName}>{backtrackResult.ambushResult.name}</Text>
+                    <Horde encounter={backtrackResult.ambushResult} />
+                </View>
+            ) : null}
+        </View>
           ) : (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateTitle}>Generate Your Dungeon</Text>
@@ -179,21 +232,35 @@ export default function HomeScreen() {
         styles.footer,
         isTablet && styles.footerTablet
       ]}>
-        <LinearGradient
-          colors={colors.accentGradient as [string, string, ...string[]]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.buttonGradient}
-        >
-          <TouchableOpacity 
-            style={[styles.generateButton, isLoading && styles.generateButtonDisabled]}
-            onPress={generateDungeon}
-            activeOpacity={0.9}
-            disabled={isLoading}
-          >
-            <Text style={styles.generateButtonText}>Explore</Text>
-          </TouchableOpacity>
-        </LinearGradient>
+        <View style={styles.buttonContainer}>
+          <View style={styles.exploreButtonContainer}>
+            <LinearGradient
+              colors={colors.accentGradient as [string, string, ...string[]]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.buttonGradient}
+            >
+              <TouchableOpacity 
+                style={[styles.generateButton, isLoading && styles.generateButtonDisabled]}
+                onPress={generateDungeon}
+                activeOpacity={0.9}
+                disabled={isLoading}
+              >
+                <Text style={styles.generateButtonText}>Explore</Text>
+              </TouchableOpacity>
+            </LinearGradient>
+          </View>
+          <View style={styles.backtrackButtonContainer}>
+            <TouchableOpacity 
+              style={[styles.backtrackButton, isLoading && styles.generateButtonDisabled]}
+              onPress={backtrack}
+              activeOpacity={0.9}
+              disabled={isLoading}
+            >
+              <Text style={styles.backtrackButtonText}>Backtrack</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
     </LinearGradient>
   );
@@ -366,28 +433,63 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
     paddingTop: 20,
   },
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    maxWidth: 700,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  exploreButtonContainer: {
+    flex: 1,
+    flexBasis: 0,
+    minWidth: 0,
+  },
   buttonGradient: {
+    width: '100%',
+    height: '100%',
     borderRadius: 14,
     shadowColor: '#8b5cf6',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
     shadowRadius: 20,
     elevation: 8,
-    maxWidth: 700,
-    alignSelf: 'center',
-    width: '100%',
   },
   generateButton: {
+    width: '100%',
     paddingVertical: 16,
-    paddingHorizontal: 32,
+    paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 56,
   },
   generateButtonText: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: Colors.dark.text,
+    letterSpacing: 0.5,
+  },
+  backtrackButtonContainer: {
+    flex: 1,
+    flexBasis: 0,
+    minWidth: 0,
+  },
+  backtrackButton: {
+    width: '100%',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 56,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: Colors.dark.borderSecondary,
+  },
+  backtrackButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: Colors.dark.textSecondary,
     letterSpacing: 0.5,
   },
   errorContainer: {
@@ -432,5 +534,46 @@ const styles = StyleSheet.create({
   generateButtonDisabled: {
     opacity: 0.6,
   },
-  
+  resultCard: {
+    backgroundColor: 'rgba(21, 21, 32, 0.6)',
+    padding: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    width: '100%',
+  },
+  ambushTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.dark.text,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  ambushDescription: {
+    fontSize: 16,
+    fontWeight: '400',
+    color: Colors.dark.textSecondary,
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 24,
+  },
+  ambushName: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: Colors.dark.accent,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  safeMessageContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  safeMessage: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: Colors.dark.text,
+      textAlign: 'center',
+      lineHeight: 28,
+  },
 });
