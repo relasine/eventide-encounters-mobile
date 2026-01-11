@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import { useRegion } from '@/contexts/RegionContext';
 import { useBottomSheet } from '@/contexts/BottomSheetProvider';
 import { Colors } from '@/constants/theme';
@@ -12,11 +13,17 @@ const formatRegionName = (region: string): string => {
 export function RegionSelector() {
   const { region } = useRegion();
   const { openBottomSheet } = useBottomSheet();
+  const router = useRouter();
   const colors = Colors.dark;
+
+  const handleLongPress = () => {
+    router.push('/region-info');
+  };
 
   return (
     <TouchableOpacity 
-      onPress={openBottomSheet} 
+      onPress={openBottomSheet}
+      onLongPress={handleLongPress}
       style={styles.regionButton}
       activeOpacity={0.8}
     >

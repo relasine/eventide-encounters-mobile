@@ -126,6 +126,7 @@ export default function AltarScreen() {
                     disabled={rollModifier <= 0} 
                     style={[styles.modifierButton, rollModifier <= 0 && styles.modifierButtonDisabled]} 
                     onPress={decrementRollModifier}
+                    onLongPress={() => setRollModifier(0)}
                   >
                     <Text style={[styles.modifierButtonText, rollModifier <= 0 && styles.modifierButtonTextDisabled]}>−</Text>
                   </TouchableOpacity>
@@ -235,22 +236,6 @@ export default function AltarScreen() {
               <Text style={styles.primaryButtonText}>Roll Altar</Text>
             </TouchableOpacity>
           </LinearGradient>
-
-          {rollModifier > 0 ? (
-            <TouchableOpacity 
-              style={styles.secondaryButton} 
-              onPress={() => setRollModifier(0)}
-            >
-              <Text style={styles.secondaryButtonText}>Reset Modifier</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity 
-              disabled={true} 
-              style={[styles.secondaryButton, styles.secondaryButtonDisabled]}
-            >
-              <Text style={[styles.secondaryButtonText, styles.secondaryButtonTextDisabled]}>Reset Modifier</Text>
-            </TouchableOpacity>
-          )}
         </View>
       </View>
     </LinearGradient>
