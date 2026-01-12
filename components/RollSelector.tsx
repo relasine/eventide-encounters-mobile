@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -50,16 +50,12 @@ export function RollSelector() {
   const { openRollBottomSheet } = useRollBottomSheet();
   const colors = Colors.dark;
   const [displayText, setDisplayText] = useState<string>(formatRollLabel(roll));
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isShowingResult, setIsShowingResult] = useState<boolean>(false);
 
   useEffect(() => {
     // Update display text when roll changes
-    // If we're showing a result, clear the timeout and update immediately
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
     setDisplayText(formatRollLabel(roll));
+    setIsShowingResult(false);
   }, [roll]);
 
   const handlePress = () => {
@@ -68,39 +64,21 @@ export function RollSelector() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
 
-    // Clear any existing timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
-    // Calculate the roll result
-    const result = rollDice(roll);
-    setDisplayText(result);
-
-    // Set timeout to revert back to roll label after 5 seconds
-    timeoutRef.current = setTimeout(() => {
+    if (isShowingResult) {
+      // If showing a result, reset to roll label
       setDisplayText(formatRollLabel(roll));
-      timeoutRef.current = null;
-    }, 5000);
+      setIsShowingResult(false);
+    } else {
+      // If showing roll label, generate and show result
+      const result = rollDice(roll);
+      setDisplayText(result);
+      setIsShowingResult(true);
+    }
   };
 
   const handleLongPress = () => {
-    // Clear any existing timeout when opening bottom sheet
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
     openRollBottomSheet();
   };
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
 
   return (
     <TouchableOpacity 
