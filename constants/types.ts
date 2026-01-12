@@ -153,7 +153,7 @@ export type BacktrackResult = {
     ambushResult: Enemy | null;
 }
 
-export type randomRolls = "d6" | "2d6" |"2d6^" 
+export type randomRolls = "d4" | "d6" | "2d6" |"2d6^" 
 
 export type Character = {
     name: string,

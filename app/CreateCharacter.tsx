@@ -1,7 +1,7 @@
-import { View, StyleSheet, TouchableOpacity, Text, ScrollView, TextInput, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, ScrollView, TextInput, ActivityIndicator, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/theme';
@@ -24,8 +24,17 @@ export default function CreateCharacterScreen() {
   const raceBottomSheetRef = useRef<BottomSheet>(null);
   const classBottomSheetRef = useRef<BottomSheet>(null);
 
-  const raceSnapPoints = useRef(['90%']);
-  const classSnapPoints = useRef(['90%']);
+  const raceSnapPoints = useMemo(() => {
+    const screenHeight = Dimensions.get('window').height;
+    const height = screenHeight * 0.9 + 32;
+    return [height];
+  }, []);
+
+  const classSnapPoints = useMemo(() => {
+    const screenHeight = Dimensions.get('window').height;
+    const height = screenHeight * 0.9 + 32;
+    return [height];
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -288,7 +297,7 @@ export default function CreateCharacterScreen() {
       <BottomSheet
         ref={raceBottomSheetRef}
         index={-1}
-        snapPoints={raceSnapPoints.current}
+        snapPoints={raceSnapPoints}
         enablePanDownToClose
         enableContentPanningGesture={false}
         backdropComponent={renderRaceBackdrop}
@@ -335,7 +344,7 @@ export default function CreateCharacterScreen() {
       <BottomSheet
         ref={classBottomSheetRef}
         index={-1}
-        snapPoints={classSnapPoints.current}
+        snapPoints={classSnapPoints}
         enablePanDownToClose
         enableContentPanningGesture={false}
         backdropComponent={renderClassBackdrop}

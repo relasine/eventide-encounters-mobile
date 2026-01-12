@@ -16,7 +16,15 @@ const rollDice = (rollType: randomRolls): string => {
     return Math.floor(Math.random() * 6) + 1;
   };
 
+  const rollD4 = (): number => {
+    return Math.floor(Math.random() * 4) + 1;
+  };
+
   switch (rollType) {
+    case 'd4': {
+      const result = rollD4();
+      return result.toString();
+    }
     case 'd6': {
       const result = rollSingleDie();
       return result.toString();
