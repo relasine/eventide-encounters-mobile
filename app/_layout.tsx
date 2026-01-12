@@ -29,6 +29,7 @@ export default function RootLayout() {
                   <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
                   <Stack.Screen name="region-info" options={{ headerShown: false }} />
                   <Stack.Screen name="bestiary-entry" options={{ headerShown: false }} />
+                  <Stack.Screen name="CreateCharacter" options={{ headerShown: false }} />
                 </Stack>
                 <StatusBar style="light" />
               </ThemeProvider>

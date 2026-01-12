@@ -17,9 +17,12 @@ const MAPPING = {
   'house.fill': 'home',
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
+  'chevron.left': 'chevron-left',
   'chevron.right': 'chevron-right',
   'door.right.hand.open': 'meeting-room',
   'figure.walk': 'directions-walk',
+  'person.3': 'groups',
+  'trash': 'delete',
 } as IconMapping;
 
 /**

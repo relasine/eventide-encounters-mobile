@@ -154,3 +154,41 @@ export type BacktrackResult = {
 }
 
 export type randomRolls = "d6" | "2d6" |"2d6^" 
+
+export type Character = {
+    name: string,
+    race: RaceType,
+    class: ClassType,
+    level: number,
+    attack: string,
+    defense: string,
+    maxHealth: number,
+    currentHealth: number,
+    position: 1 | 2 | 3 | 4 | null
+    id: number
+}
+
+export type RaceType = {
+    name: string
+    archetypes: string[],
+    health: number,
+    attack: string,
+    defense: string,
+    racialAbility: {
+        name: string,
+        ability: string
+    },
+    description: string
+}
+
+export type ClassType = {
+    name: string,
+    tier: string,
+    archetype: string[],
+    classAbility: {
+        name: string,
+        ability: string
+    },
+    classPassive: string,
+    description: string
+}

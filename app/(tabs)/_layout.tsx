@@ -98,6 +98,19 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="party"
+        options={{
+          title: 'Party',
+          tabBarIcon: ({ color, focused }) => (
+            <IconSymbol 
+              size={focused ? 26 : 24} 
+              name="person.3" 
+              color={color} 
+            />
+          ),
+        }}
+      />
     </Tabs>
   );
 }
