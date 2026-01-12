@@ -161,6 +161,7 @@ export default function CreateCharacterScreen() {
         race: selectedRace,
         class: selectedClass,
         level: 1,
+        surges: 0,
         attack: selectedRace.attack,
         defense: selectedRace.defense,
         maxHealth: selectedRace.health,

@@ -102,9 +102,15 @@ export default function PartyScreen() {
                 styles.charactersContainer,
               ]}>
                 {characters.map((character, index) => (
-                  <View key={index} style={[
-                    styles.characterCard,
-                  ]}>
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.characterCard}
+                    onPress={() => router.push({
+                      pathname: '/CharacterDetails',
+                      params: { id: character.id.toString() }
+                    })}
+                    activeOpacity={0.8}
+                  >
                     <View style={styles.characterCardHeader}>
                       <Text style={styles.characterName}>{character.name}</Text>
                       <TouchableOpacity
@@ -149,7 +155,7 @@ export default function PartyScreen() {
                         </Text>
                       </View>
                     </View>
-                  </View>
+                  </TouchableOpacity>
                 ))}
               </View>
             )}

@@ -23,6 +23,8 @@ const MAPPING = {
   'figure.walk': 'directions-walk',
   'person.3': 'groups',
   'trash': 'delete',
+  'plus': 'add',
+  'minus': 'remove',
 } as IconMapping;
 
 /**

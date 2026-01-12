@@ -30,6 +30,7 @@ export default function RootLayout() {
                   <Stack.Screen name="region-info" options={{ headerShown: false }} />
                   <Stack.Screen name="bestiary-entry" options={{ headerShown: false }} />
                   <Stack.Screen name="CreateCharacter" options={{ headerShown: false }} />
+                  <Stack.Screen name="CharacterDetails" options={{ headerShown: false }} />
                 </Stack>
                 <StatusBar style="light" />
               </ThemeProvider>

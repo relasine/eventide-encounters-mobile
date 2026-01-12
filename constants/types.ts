@@ -161,6 +161,7 @@ export type Character = {
     class: ClassType,
     level: number,
     attack: string,
+    surges: number,
     defense: string,
     maxHealth: number,
     currentHealth: number,
