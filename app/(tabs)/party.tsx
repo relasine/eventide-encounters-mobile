@@ -1,7 +1,8 @@
 import { View, StyleSheet, TouchableOpacity, Text, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
@@ -17,6 +18,10 @@ export default function PartyScreen() {
   const colors = Colors.dark;
   const { isTablet } = useResponsive();
   const [characters, setCharacters] = useState<Character[]>([]);
+  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  
+  const maxHealthBottomSheetRef = useRef<BottomSheet>(null);
+  const maxHealthSnapPoints = useMemo(() => ['40%'], []);
 
   const loadCharacters = useCallback(async () => {
     try {
@@ -117,6 +122,52 @@ export default function PartyScreen() {
     handleUpdateCharacter(updated);
   }, [handleUpdateCharacter]);
 
+  const openMaxHealthBottomSheet = useCallback((character: Character) => {
+    setSelectedCharacter(character);
+    maxHealthBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeMaxHealthBottomSheet = useCallback(() => {
+    maxHealthBottomSheetRef.current?.close();
+    setSelectedCharacter(null);
+  }, []);
+
+  const handleIncrementMaxHealth = useCallback(() => {
+    if (!selectedCharacter) return;
+    const updated = {
+      ...selectedCharacter,
+      maxHealth: selectedCharacter.maxHealth + 1,
+      // Ensure currentHealth doesn't exceed new maxHealth
+      currentHealth: Math.min(selectedCharacter.currentHealth, selectedCharacter.maxHealth + 1)
+    };
+    handleUpdateCharacter(updated);
+    setSelectedCharacter(updated);
+  }, [selectedCharacter, handleUpdateCharacter]);
+
+  const handleDecrementMaxHealth = useCallback(() => {
+    if (!selectedCharacter) return;
+    const updated = {
+      ...selectedCharacter,
+      maxHealth: Math.max(1, selectedCharacter.maxHealth - 1),
+      // Ensure currentHealth doesn't exceed new maxHealth
+      currentHealth: Math.min(selectedCharacter.currentHealth, selectedCharacter.maxHealth - 1)
+    };
+    handleUpdateCharacter(updated);
+    setSelectedCharacter(updated);
+  }, [selectedCharacter, handleUpdateCharacter]);
+
+  const renderMaxHealthBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeMaxHealthBottomSheet}
+      />
+    ),
+    [closeMaxHealthBottomSheet]
+  );
+
   return (
     <LinearGradient
       colors={colors.backgroundGradient as [string, string, ...string[]]}
@@ -201,7 +252,12 @@ export default function PartyScreen() {
 
                       <View style={styles.counterSection}>
                         <View style={styles.counterRow}>
-                          <Text style={styles.counterLabel}>Health: </Text>
+                          <TouchableOpacity
+                            onLongPress={() => openMaxHealthBottomSheet(character)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.counterLabel}>Health: </Text>
+                          </TouchableOpacity>
                           <View style={styles.counterControls}>
                             <TouchableOpacity
                               onPress={(e) => {
@@ -302,6 +358,65 @@ export default function PartyScreen() {
           </TouchableOpacity>
         </LinearGradient>
       </View>
+
+      <BottomSheet
+        ref={maxHealthBottomSheetRef}
+        index={-1}
+        snapPoints={maxHealthSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderMaxHealthBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>
+                {selectedCharacter ? `${selectedCharacter.name}'s Max Health` : 'Max Health'}
+              </Text>
+              <TouchableOpacity onPress={closeMaxHealthBottomSheet} style={styles.closeButton}>
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.maxHealthContainer}>
+              <Text style={styles.maxHealthLabel}>Current Max Health:</Text>
+              <View style={styles.maxHealthControls}>
+                <TouchableOpacity
+                  onPress={handleDecrementMaxHealth}
+                  style={styles.maxHealthButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol
+                    name="minus"
+                    size={24}
+                    color={Colors.dark.text}
+                  />
+                </TouchableOpacity>
+                <Text style={styles.maxHealthValue}>
+                  {selectedCharacter?.maxHealth ?? 0}
+                </Text>
+                <TouchableOpacity
+                  onPress={handleIncrementMaxHealth}
+                  style={styles.maxHealthButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol
+                    name="plus"
+                    size={24}
+                    color={Colors.dark.text}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
     </LinearGradient>
   );
 }
@@ -493,6 +608,79 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.dark.text,
     minWidth: 60,
+    textAlign: 'center',
+  },
+  bottomSheetBackground: {
+    backgroundColor: 'transparent',
+  },
+  gradientBackground: {
+    flex: 1,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  handleIndicator: {
+    backgroundColor: Colors.dark.border,
+    width: 40,
+  },
+  bottomSheetContent: {
+    padding: 24,
+    paddingBottom: 40,
+    flex: 1,
+  },
+  bottomSheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.dark.border,
+  },
+  bottomSheetHeaderText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.dark.text,
+  },
+  closeButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+    backgroundColor: Colors.dark.backgroundTertiary,
+  },
+  closeButtonText: {
+    fontSize: 24,
+    color: Colors.dark.textSecondary,
+    fontWeight: '300',
+  },
+  maxHealthContainer: {
+    alignItems: 'center',
+    gap: 24,
+  },
+  maxHealthLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.dark.textSecondary,
+  },
+  maxHealthControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 24,
+  },
+  maxHealthButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.dark.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  maxHealthValue: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: Colors.dark.text,
+    minWidth: 80,
     textAlign: 'center',
   },
 });
