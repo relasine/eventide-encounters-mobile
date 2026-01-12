@@ -167,6 +167,8 @@ export type Character = {
     currentHealth: number,
     position: 1 | 2 | 3 | 4 | null
     id: string
+    glowstone: number
+    essence: number
 }
 
 export type RaceType = {

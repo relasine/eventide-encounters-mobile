@@ -5,7 +5,7 @@ import { Ability, MasterBehemoth as MasterBehemothType, Escalation as Escalation
 import { Colors } from "@/constants/theme"
 
 export const MasterBehemoth = (props: { encounter: MasterBehemothType, generateBehemoth: () => void, isBestiaryEntry?: boolean }) => {
-    const { encounter, generateBehemoth, isBestiaryEntry = false     } = props;
+    const { encounter, generateBehemoth, isBestiaryEntry = false } = props;
     const colors = Colors.dark;
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
@@ -18,8 +18,7 @@ export const MasterBehemoth = (props: { encounter: MasterBehemothType, generateB
                             <Text style={styles.title}>{encounter.name}</Text>
                         </View>
 
-                        
-                            <LinearGradient
+                        <LinearGradient
                             colors={colors.accentGradient as [string, string, ...string[]]}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}

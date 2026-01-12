@@ -139,6 +139,38 @@ export default function PartyScreen() {
     handleUpdateCharacter(updated);
   }, [handleUpdateCharacter]);
 
+  const handleIncrementGlowstone = useCallback((character: Character) => {
+    const updated = {
+      ...character,
+      glowstone: character.glowstone + 1
+    };
+    handleUpdateCharacter(updated);
+  }, [handleUpdateCharacter]);
+
+  const handleDecrementGlowstone = useCallback((character: Character) => {
+    const updated = {
+      ...character,
+      glowstone: Math.max(0, character.glowstone - 1)
+    };
+    handleUpdateCharacter(updated);
+  }, [handleUpdateCharacter]);
+
+  const handleIncrementEssence = useCallback((character: Character) => {
+    const updated = {
+      ...character,
+      essence: character.essence + 1
+    };
+    handleUpdateCharacter(updated);
+  }, [handleUpdateCharacter]);
+
+  const handleDecrementEssence = useCallback((character: Character) => {
+    const updated = {
+      ...character,
+      essence: Math.max(0, character.essence - 1)
+    };
+    handleUpdateCharacter(updated);
+  }, [handleUpdateCharacter]);
+
   const openMaxHealthBottomSheet = useCallback((character: Character) => {
     setSelectedCharacter(character);
     maxHealthBottomSheetRef.current?.snapToIndex(0);
@@ -407,6 +439,80 @@ export default function PartyScreen() {
                               onPress={(e) => {
                                 e.stopPropagation();
                                 handleIncrementSurges(character);
+                              }}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="plus"
+                                size={14}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+
+                        <View style={styles.counterRow}>
+                          <Text style={styles.counterLabel}>Glowstone: </Text>
+                          <View style={styles.counterControls}>
+                            <TouchableOpacity
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                handleDecrementGlowstone(character);
+                              }}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="minus"
+                                size={14}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
+                            <Text style={styles.counterValue}>
+                              {character.glowstone}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                handleIncrementGlowstone(character);
+                              }}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="plus"
+                                size={14}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+
+                        <View style={styles.counterRow}>
+                          <Text style={styles.counterLabel}>Essence: </Text>
+                          <View style={styles.counterControls}>
+                            <TouchableOpacity
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                handleDecrementEssence(character);
+                              }}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="minus"
+                                size={14}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
+                            <Text style={styles.counterValue}>
+                              {character.essence}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                handleIncrementEssence(character);
                               }}
                               style={styles.smallCounterButton}
                               activeOpacity={0.7}

@@ -8,6 +8,7 @@ import { Colors } from '@/constants/theme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { RaceType, ClassType, Character } from '@/constants/types';
 import { API_KEY, API_URL } from '@/constants';
+import { roll2d6 } from '@/utils/functions/rolls';
 
 export default function CreateCharacterScreen() {
   const router = useRouter();
@@ -164,11 +165,11 @@ export default function CreateCharacterScreen() {
         charactersArray = JSON.parse(charactersJson);
       }
     
-    // Generate a simple UUID-like string using timestamp and random values
-    const uuid = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${Math.random().toString(36).substring(2, 9)}`;
+      // Generate a simple UUID-like string using timestamp and random values
+      const uuid = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${Math.random().toString(36).substring(2, 9)}`;
 
-       // Create the character object
-    const newCharacter: Character = {
+      // Create the character object
+      const newCharacter: Character = {
         name: name.trim(),
         race: selectedRace,
         class: selectedClass,
@@ -180,6 +181,8 @@ export default function CreateCharacterScreen() {
         currentHealth: selectedRace.health,
         position: null,
         id: uuid,
+        glowstone: roll2d6(),
+        essence: 0,
       };
       
       // Add the new character to the array

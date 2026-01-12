@@ -111,7 +111,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: Colors.dark.borderSecondary,
         marginBottom: 16
-
     },
     blunderLabel: {
         fontSize: 12,

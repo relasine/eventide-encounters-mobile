@@ -166,6 +166,30 @@ export default function CharacterDetailsScreen() {
     updateCharacterInStorage(updated);
   };
 
+  const handleIncrementGlowstone = () => {
+    if (!character) return;
+    const updated = { ...character, glowstone: character.glowstone + 1 };
+    updateCharacterInStorage(updated);
+  };
+
+  const handleDecrementGlowstone = () => {
+    if (!character) return;
+    const updated = { ...character, glowstone: Math.max(0, character.glowstone - 1) };
+    updateCharacterInStorage(updated);
+  };
+
+  const handleIncrementEssence = () => {
+    if (!character) return;
+    const updated = { ...character, essence: character.essence + 1 };
+    updateCharacterInStorage(updated);
+  };
+
+  const handleDecrementEssence = () => {
+    if (!character) return;
+    const updated = { ...character, essence: Math.max(0, character.essence - 1) };
+    updateCharacterInStorage(updated);
+  };
+
   const handleIncrementHealth = () => {
     if (!character) return;
     const updated = { 
@@ -618,8 +642,7 @@ export default function CharacterDetailsScreen() {
 
                     <View style={[
                       styles.counterRow,
-                      isTablet && styles.counterRowTablet,
-                      !isTablet && { paddingBottom: 16 }
+                      isTablet && styles.counterRowTablet
                     ]}>
                       <Text style={styles.counterLabel}>Surges: </Text>
                       <View style={styles.counterControls}>
@@ -639,6 +662,74 @@ export default function CharacterDetailsScreen() {
                         </Text>
                         <TouchableOpacity
                           onPress={handleIncrementSurges}
+                          style={styles.smallCounterButton}
+                          activeOpacity={0.7}
+                        >
+                          <IconSymbol
+                            name="plus"
+                            size={14}
+                            color={Colors.dark.text}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    <View style={[
+                      styles.counterRow,
+                      isTablet && styles.counterRowTablet
+                    ]}>
+                      <Text style={styles.counterLabel}>Glowstone: </Text>
+                      <View style={styles.counterControls}>
+                        <TouchableOpacity
+                          onPress={handleDecrementGlowstone}
+                          style={styles.smallCounterButton}
+                          activeOpacity={0.7}
+                        >
+                          <IconSymbol
+                            name="minus"
+                            size={14}
+                            color={Colors.dark.text}
+                          />
+                        </TouchableOpacity>
+                        <Text style={styles.counterValue}>
+                          {character.glowstone}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={handleIncrementGlowstone}
+                          style={styles.smallCounterButton}
+                          activeOpacity={0.7}
+                        >
+                          <IconSymbol
+                            name="plus"
+                            size={14}
+                            color={Colors.dark.text}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    <View style={[
+                      styles.counterRow,
+                      isTablet && styles.counterRowTablet
+                    ]}>
+                      <Text style={styles.counterLabel}>Essence: </Text>
+                      <View style={styles.counterControls}>
+                        <TouchableOpacity
+                          onPress={handleDecrementEssence}
+                          style={styles.smallCounterButton}
+                          activeOpacity={0.7}
+                        >
+                          <IconSymbol
+                            name="minus"
+                            size={14}
+                            color={Colors.dark.text}
+                          />
+                        </TouchableOpacity>
+                        <Text style={styles.counterValue}>
+                          {character.essence}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={handleIncrementEssence}
                           style={styles.smallCounterButton}
                           activeOpacity={0.7}
                         >
@@ -1230,17 +1321,22 @@ const styles = StyleSheet.create({
   },
   counterRowContainerTablet: {
     flexDirection: 'row',
-    gap: 32,
+    flexWrap: 'wrap',
+    gap: 24,
     alignItems: 'flex-start',
   },
   counterRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
     alignItems: 'center',
     width: '100%',
+    marginBottom: 8,
+    justifyContent: 'space-between',
+    paddingRight: 16
   },
   counterRowTablet: {
     flex: 1,
+    minWidth: '45%',
+    marginBottom: 0,
   },
   counterLabel: {
     fontSize: 17,
