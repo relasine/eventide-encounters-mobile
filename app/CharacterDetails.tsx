@@ -1076,7 +1076,7 @@ const styles = StyleSheet.create({
   },
   positionOptionsContent: {
     paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingBottom: 120,
     flexGrow: 1,
   },
   positionOption: {

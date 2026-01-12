@@ -2,7 +2,7 @@ import { View, StyleSheet, TouchableOpacity, Text, ScrollView } from 'react-nati
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useState, useCallback, useRef, useMemo } from 'react';
-import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetView, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
@@ -22,6 +22,9 @@ export default function PartyScreen() {
   
   const maxHealthBottomSheetRef = useRef<BottomSheet>(null);
   const maxHealthSnapPoints = useMemo(() => ['40%'], []);
+  
+  const positionBottomSheetRef = useRef<BottomSheet>(null);
+  const positionSnapPoints = useMemo(() => ['50%'], []);
 
   const loadCharacters = useCallback(async () => {
     try {
@@ -168,6 +171,60 @@ export default function PartyScreen() {
     [closeMaxHealthBottomSheet]
   );
 
+  const openPositionBottomSheet = useCallback((character: Character) => {
+    setSelectedCharacter(character);
+    positionBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closePositionBottomSheet = useCallback(() => {
+    positionBottomSheetRef.current?.close();
+    setSelectedCharacter(null);
+  }, []);
+
+  const handlePositionSelect = useCallback(async (selectedPosition: 1 | 2 | 3 | 4 | null) => {
+    if (!selectedCharacter) return;
+
+    try {
+      const charactersJson = await AsyncStorage.getItem('characters');
+      if (!charactersJson) return;
+
+      const charactersArray: Character[] = JSON.parse(charactersJson);
+      
+      // If selecting a position (1-4), clear all other characters with that position
+      if (selectedPosition !== null) {
+        charactersArray.forEach((char) => {
+          if (char.position === selectedPosition && char.id !== selectedCharacter.id) {
+            char.position = null;
+          }
+        });
+      }
+
+      // Update the current character's position
+      const updatedCharacter = { ...selectedCharacter, position: selectedPosition };
+      const updatedArray = charactersArray.map((char) =>
+        char.id === selectedCharacter.id ? updatedCharacter : char
+      );
+
+      await AsyncStorage.setItem('characters', JSON.stringify(updatedArray));
+      setCharacters(updatedArray);
+      closePositionBottomSheet();
+    } catch (error) {
+      console.error('Error updating position:', error);
+    }
+  }, [selectedCharacter, closePositionBottomSheet]);
+
+  const renderPositionBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closePositionBottomSheet}
+      />
+    ),
+    [closePositionBottomSheet]
+  );
+
   return (
     <LinearGradient
       colors={colors.backgroundGradient as [string, string, ...string[]]}
@@ -243,12 +300,16 @@ export default function PartyScreen() {
                         <Text style={styles.characterValueBold}>{character.race.name} {character.class.name }</Text>
                       </View>
 
-                      <View style={styles.characterDetailRow}>
+                      <TouchableOpacity
+                        style={styles.characterDetailRow}
+                        onPress={() => openPositionBottomSheet(character)}
+                        activeOpacity={0.7}
+                      >
                         <Text style={styles.characterLabel}>Position: </Text>
                         <Text style={styles.characterValue}>
                           {character.position !== null ? character.position : 'N/A'}
                         </Text>
-                      </View>
+                      </TouchableOpacity>
 
                       <View style={styles.counterSection}>
                         <View style={styles.counterRow}>
@@ -415,6 +476,54 @@ export default function PartyScreen() {
               </View>
             </View>
           </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Position Bottom Sheet */}
+      <BottomSheet
+        ref={positionBottomSheetRef}
+        index={-1}
+        snapPoints={positionSnapPoints}
+        enablePanDownToClose
+        enableContentPanningGesture={false}
+        backdropComponent={renderPositionBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <View style={styles.bottomSheetHeader}>
+            <Text style={styles.bottomSheetHeaderText}>Select Position</Text>
+            <TouchableOpacity onPress={closePositionBottomSheet} style={styles.closeButton}>
+              <Text style={styles.closeButtonText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <BottomSheetScrollView 
+            contentContainerStyle={styles.positionOptionsContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {([1, 2, 3, 4, null] as const).map((position) => {
+              const isSelected = selectedCharacter?.position === position;
+              const displayText = position !== null ? position.toString() : 'None';
+              return (
+                <TouchableOpacity
+                  key={position !== null ? position : 'none'}
+                  style={[styles.positionOption, isSelected && styles.positionOptionSelected]}
+                  onPress={() => handlePositionSelect(position)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.positionOptionText, isSelected && styles.positionOptionTextSelected]}>
+                    {displayText}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </BottomSheetScrollView>
         </LinearGradient>
       </BottomSheet>
     </LinearGradient>
@@ -633,11 +742,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
     paddingBottom: 16,
+    paddingHorizontal: 24,
+    paddingTop: 24,
     borderBottomWidth: 1,
     borderBottomColor: Colors.dark.border,
   },
   bottomSheetHeaderText: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: '700',
     color: Colors.dark.text,
   },
@@ -682,6 +793,34 @@ const styles = StyleSheet.create({
     color: Colors.dark.text,
     minWidth: 80,
     textAlign: 'center',
+  },
+  positionOptionsContent: {
+    paddingHorizontal: 24,
+    paddingBottom: 120,
+    flexGrow: 1,
+  },
+  positionOption: {
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: Colors.dark.backgroundTertiary,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    marginBottom: 12,
+  },
+  positionOptionSelected: {
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    borderColor: Colors.dark.borderSecondary,
+  },
+  positionOptionText: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: Colors.dark.textSecondary,
+    textAlign: 'center',
+  },
+  positionOptionTextSelected: {
+    color: Colors.dark.text,
+    fontWeight: '600',
   },
 });
 
