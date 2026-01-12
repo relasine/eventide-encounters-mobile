@@ -25,6 +25,9 @@ export default function PartyScreen() {
   
   const positionBottomSheetRef = useRef<BottomSheet>(null);
   const positionSnapPoints = useMemo(() => ['50%'], []);
+  
+  const deleteConfirmationBottomSheetRef = useRef<BottomSheet>(null);
+  const deleteConfirmationSnapPoints = useMemo(() => ['30%'], []);
 
   const loadCharacters = useCallback(async () => {
     try {
@@ -51,16 +54,26 @@ export default function PartyScreen() {
     router.push('/CreateCharacter');
   };
 
-  const handleDeleteCharacter = useCallback(async (characterToDelete: Character) => {
+  const openDeleteConfirmation = useCallback((characterToDelete: Character) => {
+    setSelectedCharacter(characterToDelete);
+    deleteConfirmationBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeDeleteConfirmation = useCallback(() => {
+    deleteConfirmationBottomSheetRef.current?.close();
+    setSelectedCharacter(null);
+  }, []);
+
+  const handleDeleteCharacter = useCallback(async () => {
+    if (!selectedCharacter) return;
+    
     try {
       const charactersJson = await AsyncStorage.getItem('characters');
       if (charactersJson) {
         const charactersArray: Character[] = JSON.parse(charactersJson);
         // Remove the character that matches the one to delete
         const updatedCharacters = charactersArray.filter(
-          (char) => !(
-            char.id === characterToDelete.id
-          )
+          (char) => char.id !== selectedCharacter.id
         );
         
         // Save updated array back to AsyncStorage
@@ -69,10 +82,11 @@ export default function PartyScreen() {
         // Update local state
         setCharacters(updatedCharacters);
       }
+      closeDeleteConfirmation();
     } catch (error) {
       console.error('Error deleting character:', error);
     }
-  }, []);
+  }, [selectedCharacter, closeDeleteConfirmation]);
 
   const handleUpdateCharacter = useCallback(async (updatedCharacter: Character) => {
     try {
@@ -225,6 +239,18 @@ export default function PartyScreen() {
     [closePositionBottomSheet]
   );
 
+  const renderDeleteConfirmationBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeDeleteConfirmation}
+      />
+    ),
+    [closeDeleteConfirmation]
+  );
+
   return (
     <LinearGradient
       colors={colors.backgroundGradient as [string, string, ...string[]]}
@@ -284,7 +310,10 @@ export default function PartyScreen() {
                     <View style={styles.characterCardHeader}>
                       <Text style={styles.characterName}>{character.name}</Text>
                       <TouchableOpacity
-                        onPress={() => handleDeleteCharacter(character)}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          openDeleteConfirmation(character);
+                        }}
                         style={styles.deleteButton}
                         activeOpacity={0.7}
                       >
@@ -524,6 +553,56 @@ export default function PartyScreen() {
               );
             })}
           </BottomSheetScrollView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Delete Confirmation Bottom Sheet */}
+      <BottomSheet
+        ref={deleteConfirmationBottomSheetRef}
+        index={-1}
+        snapPoints={deleteConfirmationSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderDeleteConfirmationBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>Delete Character</Text>
+              <TouchableOpacity onPress={closeDeleteConfirmation} style={styles.closeButton}>
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.deleteConfirmationContainer}>
+              <Text style={styles.deleteConfirmationText}>
+                Are you sure you want to delete <Text style={styles.deleteConfirmationCharacterName}>{selectedCharacter?.name}</Text>? This action cannot be undone.
+              </Text>
+              
+              <View style={styles.deleteConfirmationButtons}>
+                <TouchableOpacity
+                  onPress={closeDeleteConfirmation}
+                  style={styles.deleteCancelButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleDeleteCharacter}
+                  style={styles.deleteConfirmButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteConfirmButtonText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BottomSheetView>
         </LinearGradient>
       </BottomSheet>
     </LinearGradient>
@@ -821,6 +900,57 @@ const styles = StyleSheet.create({
   positionOptionTextSelected: {
     color: Colors.dark.text,
     fontWeight: '600',
+  },
+  deleteConfirmationContainer: {
+    paddingHorizontal: 24,
+    gap: 24,
+  },
+  deleteConfirmationText: {
+    fontSize: 16,
+    color: Colors.dark.textSecondary,
+    lineHeight: 24,
+    textAlign: 'center',
+  },
+  deleteConfirmationCharacterName: {
+    fontWeight: '700',
+    color: Colors.dark.text,
+  },
+  deleteConfirmationButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'center',
+  },
+  deleteCancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.dark.backgroundTertiary,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteCancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.dark.text,
+  },
+  deleteConfirmButton: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteConfirmButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ef4444',
   },
 });
 

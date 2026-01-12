@@ -20,7 +20,7 @@ export default function CharacterDetailsScreen() {
   const colors = Colors.dark;
   const { isTablet } = useResponsive();
   
-  const characterId = params.id !== undefined && params.id !== null ? parseInt(params.id as string, 10) : null;
+  const characterId: string | null = params.id !== undefined && params.id !== null ? (params.id as string) : null;
   const [character, setCharacter] = useState<Character | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

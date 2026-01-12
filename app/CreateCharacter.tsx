@@ -154,6 +154,9 @@ export default function CreateCharacterScreen() {
         // Parse existing characters array
         charactersArray = JSON.parse(charactersJson);
       }
+    
+    // Generate a simple UUID-like string using timestamp and random values
+    const uuid = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${Math.random().toString(36).substring(2, 9)}`;
 
        // Create the character object
     const newCharacter: Character = {
@@ -167,7 +170,7 @@ export default function CreateCharacterScreen() {
         maxHealth: selectedRace.health,
         currentHealth: selectedRace.health,
         position: null,
-        id: charactersArray.length,
+        id: uuid,
       };
       
       // Add the new character to the array

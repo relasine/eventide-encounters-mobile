@@ -166,7 +166,7 @@ export type Character = {
     maxHealth: number,
     currentHealth: number,
     position: 1 | 2 | 3 | 4 | null
-    id: number
+    id: string
 }
 
 export type RaceType = {
