@@ -485,6 +485,14 @@ export default function CharacterDetailsScreen() {
             <RollSelector />
           </View>
 
+          {character && (
+            <View style={styles.titleSection}>
+              <Text style={styles.titleText}>
+                {character.name} - {character.race.name} {character.class.name}
+              </Text>
+            </View>
+          )}
+
           <View style={styles.content}>
             {isLoading || isLoadingClasses ? (
               <View style={styles.loadingContainer}>
@@ -501,26 +509,26 @@ export default function CharacterDetailsScreen() {
               </View>
             ) : character ? (
               <View style={styles.characterCard}>
-                  <View style={styles.infoRow}>
-                <Text style={styles.label}>Race:</Text>
-                    <Text style={styles.value}>{character.race.name}</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.infoRow}
-                    onPress={openClassBottomSheet}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.label}>Class:</Text>
-                    <Text style={styles.value}>{character.class.name}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.infoRow}
-                    onPress={openLevelBottomSheet}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.label}>Level:</Text>
-                    <Text style={styles.value}>{character.level}</Text>
-                  </TouchableOpacity>
+                <View style={styles.infoRow}>
+                  <Text style={styles.label}>Race:</Text>
+                  <Text style={styles.value}>{character.race.name}</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.infoRow}
+                  onPress={openClassBottomSheet}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.label}>Class:</Text>
+                  <Text style={styles.value}>{character.class.name}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.infoRow}
+                  onPress={openLevelBottomSheet}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.label}>Level:</Text>
+                  <Text style={styles.value}>{character.level}</Text>
+                </TouchableOpacity>
 
                 <View style={styles.section}>
                   <TouchableOpacity
@@ -549,8 +557,78 @@ export default function CharacterDetailsScreen() {
                       {character.position !== null ? character.position : 'N/A'}
                     </Text>
                   </TouchableOpacity>
+                </View>
 
-                  <View style={styles.abilitySection}>
+                <View style={styles.counterSection}>
+                  <View style={styles.counterRow}>
+                    <TouchableOpacity
+                      onLongPress={openMaxHealthBottomSheet}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.counterLabel}>Health: </Text>
+                    </TouchableOpacity>
+                    <View style={styles.counterControls}>
+                      <TouchableOpacity
+                        onPress={handleDecrementHealth}
+                        style={styles.smallCounterButton}
+                        activeOpacity={0.7}
+                      >
+                        <IconSymbol
+                          name="minus"
+                          size={14}
+                          color={Colors.dark.text}
+                        />
+                      </TouchableOpacity>
+                      <Text style={styles.counterValue}>
+                        {character.currentHealth} / {character.maxHealth}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={handleIncrementHealth}
+                        style={styles.smallCounterButton}
+                        activeOpacity={0.7}
+                      >
+                        <IconSymbol
+                          name="plus"
+                          size={14}
+                          color={Colors.dark.text}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <View style={{...styles.counterRow, paddingBottom: 16}}>
+                    <Text style={styles.counterLabel}>Surges: </Text>
+                    <View style={styles.counterControls}>
+                      <TouchableOpacity
+                        onPress={handleDecrementSurges}
+                        style={styles.smallCounterButton}
+                        activeOpacity={0.7}
+                      >
+                        <IconSymbol
+                          name="minus"
+                          size={14}
+                          color={Colors.dark.text}
+                        />
+                      </TouchableOpacity>
+                      <Text style={styles.counterValue}>
+                        {character.surges !== null ? character.surges : 'N/A'}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={handleIncrementSurges}
+                        style={styles.smallCounterButton}
+                        activeOpacity={0.7}
+                      >
+                        <IconSymbol
+                          name="plus"
+                          size={14}
+                          color={Colors.dark.text}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+
+                <View style={styles.abilitySection}>
                   <Text style={styles.abilityText}>
                     <Text style={styles.abilityLabel}>Racial Ability: </Text>
                     <Text style={styles.abilityName}>{character.race.racialAbility.name}</Text>
@@ -571,72 +649,6 @@ export default function CharacterDetailsScreen() {
                     <Text style={styles.abilityLabel}>Class Passive: </Text>
                     <Text style={styles.abilityValue}>{character.class.classPassive}</Text>
                   </Text>
-                </View>
-                </View>
-
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Surges</Text>
-                  <View style={styles.counterContainer}>
-                    <TouchableOpacity
-                      onPress={handleDecrementSurges}
-                      style={styles.counterButton}
-                      activeOpacity={0.7}
-                    >
-                      <IconSymbol
-                        name="minus"
-                        size={20}
-                        color={Colors.dark.text}
-                      />
-                    </TouchableOpacity>
-                    <Text style={styles.counterValue}>{character.surges}</Text>
-                    <TouchableOpacity
-                      onPress={handleIncrementSurges}
-                      style={styles.counterButton}
-                      activeOpacity={0.7}
-                    >
-                      <IconSymbol
-                        name="plus"
-                        size={20}
-                        color={Colors.dark.text}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.section}>
-                  <TouchableOpacity
-                    onLongPress={openMaxHealthBottomSheet}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.sectionTitle}>Health</Text>
-                  </TouchableOpacity>
-                  <View style={styles.counterContainer}>
-                    <TouchableOpacity
-                      onPress={handleDecrementHealth}
-                      style={styles.counterButton}
-                      activeOpacity={0.7}
-                    >
-                      <IconSymbol
-                        name="minus"
-                        size={20}
-                        color={Colors.dark.text}
-                      />
-                    </TouchableOpacity>
-                    <Text style={styles.counterValue}>
-                      {character.currentHealth} / {character.maxHealth}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={handleIncrementHealth}
-                      style={styles.counterButton}
-                      activeOpacity={0.7}
-                    >
-                      <IconSymbol
-                        name="plus"
-                        size={20}
-                        color={Colors.dark.text}
-                      />
-                    </TouchableOpacity>
-                  </View>
                 </View>
               </View>
             ) : null}
@@ -1041,6 +1053,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
+  titleSection: {
+    marginBottom: 24,
+  },
+  titleText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.dark.text,
+    textAlign: 'center',
+  },
   content: {
     flex: 1,
     width: '100%',
@@ -1141,11 +1162,43 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   counterValue: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
     color: Colors.dark.text,
-    minWidth: 120,
+    minWidth: 60,
     textAlign: 'center',
+  },
+  counterSection: {
+    marginTop: 12,
+    marginBottom: 24,
+    paddingBottom: 24,
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  counterRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+  },
+  counterLabel: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: Colors.dark.textSecondary,
+    minWidth: 70,
+  },
+  counterControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  smallCounterButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.dark.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   abilitySection: {
     marginBottom: 20,
