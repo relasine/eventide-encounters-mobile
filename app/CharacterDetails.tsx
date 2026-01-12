@@ -1,7 +1,7 @@
 import { View, StyleSheet, TouchableOpacity, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRegion } from '@/contexts/RegionContext';
@@ -25,7 +25,7 @@ export default function CharacterDetailsScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const positionBottomSheetRef = useRef<BottomSheet>(null);
-  const positionSnapPoints = useRef(['50%']);
+  const positionSnapPoints = useMemo(() => ['50%'], []);
 
   useEffect(() => {
     const loadCharacter = async () => {
@@ -135,6 +135,7 @@ export default function CharacterDetailsScreen() {
     [closePositionBottomSheet]
   );
 
+
   const handleIncrementSurges = () => {
     if (!character || character?.surges === null || character?.surges >= 5) return;
     const updated = { ...character, surges: character.surges + 1 };
@@ -218,10 +219,8 @@ export default function CharacterDetailsScreen() {
               </View>
             ) : character ? (
               <View style={styles.characterCard}>
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Basic Information</Text>
-                  <View style={styles.infoRow}>
-                    <Text style={styles.label}>Race:</Text>
+                <View style={styles.infoRow}>
+                <Text style={styles.label}>Race:</Text>
                     <Text style={styles.value}>{character.race.name}</Text>
                   </View>
                   <View style={styles.infoRow}>
@@ -232,6 +231,8 @@ export default function CharacterDetailsScreen() {
                     <Text style={styles.label}>Level:</Text>
                     <Text style={styles.value}>{character.level}</Text>
                   </View>
+
+                <View style={styles.section}>
                   <View style={styles.infoRow}>
                     <Text style={styles.label}>Attack:</Text>
                     <Text style={styles.value}>{character.attack}</Text>
@@ -250,6 +251,29 @@ export default function CharacterDetailsScreen() {
                       {character.position !== null ? character.position : 'N/A'}
                     </Text>
                   </TouchableOpacity>
+
+                  <View style={styles.abilitySection}>
+                  <Text style={styles.abilityText}>
+                    <Text style={styles.abilityLabel}>Racial Ability: </Text>
+                    <Text style={styles.abilityName}>{character.race.racialAbility.name}</Text>
+                    <Text style={styles.abilityValue}> - {character.race.racialAbility.ability}</Text>
+                  </Text>
+                </View>
+
+                <View style={styles.abilitySection}>
+                  <Text style={styles.abilityText}>
+                    <Text style={styles.abilityLabel}>Class Ability: </Text>
+                    <Text style={styles.abilityName}>{character.class.classAbility.name}</Text>
+                    <Text style={styles.abilityValue}> - {character.class.classAbility.ability}</Text>
+                  </Text>
+                </View>
+
+                <View style={styles.abilitySection}>
+                  <Text style={styles.abilityText}>
+                    <Text style={styles.abilityLabel}>Class Passive: </Text>
+                    <Text style={styles.abilityValue}>{character.class.classPassive}</Text>
+                  </Text>
+                </View>
                 </View>
 
                 <View style={styles.section}>
@@ -321,7 +345,7 @@ export default function CharacterDetailsScreen() {
       <BottomSheet
         ref={positionBottomSheetRef}
         index={-1}
-        snapPoints={positionSnapPoints.current}
+        snapPoints={positionSnapPoints}
         enablePanDownToClose
         enableContentPanningGesture={false}
         backdropComponent={renderPositionBackdrop}
@@ -364,6 +388,7 @@ export default function CharacterDetailsScreen() {
           </BottomSheetScrollView>
         </LinearGradient>
       </BottomSheet>
+
     </LinearGradient>
   );
 }
@@ -531,6 +556,32 @@ const styles = StyleSheet.create({
     color: Colors.dark.text,
     minWidth: 120,
     textAlign: 'center',
+  },
+  abilitySection: {
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  abilityText: {
+    fontSize: 16,
+    color: Colors.dark.text,
+    lineHeight: 24,
+  },
+  abilityLabel: {
+    fontWeight: '600',
+    color: Colors.dark.text,
+  },
+  abilityName: {
+    fontStyle: 'italic',
+    fontWeight: '600',
+    color: Colors.dark.text,
+  },
+  abilityValue: {
+    color: Colors.dark.textSecondary,
+    lineHeight: 24,
   },
   bottomSheetBackground: {
     backgroundColor: 'transparent',

@@ -66,6 +66,57 @@ export default function PartyScreen() {
     }
   }, []);
 
+  const handleUpdateCharacter = useCallback(async (updatedCharacter: Character) => {
+    try {
+      const charactersJson = await AsyncStorage.getItem('characters');
+      if (charactersJson) {
+        const charactersArray: Character[] = JSON.parse(charactersJson);
+        const updatedCharacters = charactersArray.map((char) =>
+          char.id === updatedCharacter.id ? updatedCharacter : char
+        );
+        
+        await AsyncStorage.setItem('characters', JSON.stringify(updatedCharacters));
+        setCharacters(updatedCharacters);
+      }
+    } catch (error) {
+      console.error('Error updating character:', error);
+    }
+  }, []);
+
+  const handleIncrementHealth = useCallback((character: Character) => {
+    const updated = {
+      ...character,
+      currentHealth: Math.min(character.maxHealth, character.currentHealth + 1)
+    };
+    handleUpdateCharacter(updated);
+  }, [handleUpdateCharacter]);
+
+  const handleDecrementHealth = useCallback((character: Character) => {
+    const updated = {
+      ...character,
+      currentHealth: Math.max(0, character.currentHealth - 1)
+    };
+    handleUpdateCharacter(updated);
+  }, [handleUpdateCharacter]);
+
+  const handleIncrementSurges = useCallback((character: Character) => {
+    if (character.surges === null || character.surges >= 5) return;
+    const updated = {
+      ...character,
+      surges: character.surges + 1
+    };
+    handleUpdateCharacter(updated);
+  }, [handleUpdateCharacter]);
+
+  const handleDecrementSurges = useCallback((character: Character) => {
+    if (character.surges === null) return;
+    const updated = {
+      ...character,
+      surges: Math.max(0, character.surges - 1)
+    };
+    handleUpdateCharacter(updated);
+  }, [handleUpdateCharacter]);
+
   return (
     <LinearGradient
       colors={colors.backgroundGradient as [string, string, ...string[]]}
@@ -129,30 +180,88 @@ export default function PartyScreen() {
                       <View style={styles.characterDetailRow}>
                         <Text style={styles.characterValueBold}>{character.race.name} {character.class.name }</Text>
                       </View>
-                      <View style={styles.characterDetailRow}>
-                        <Text style={styles.characterLabel}>Level: </Text>
-                        <Text style={styles.characterValue}>{character.level}</Text>
-                      </View>
-                      <View style={styles.characterDetailRow}>
-                        <Text style={styles.characterLabel}>Attack: </Text>
-                        <Text style={styles.characterValue}>{character.attack}</Text>
-                      </View>
-                      <View style={styles.characterDetailRow}>
-                        <Text style={styles.characterLabel}>Defense: </Text>
-                        <Text style={styles.characterValue}>{character.defense}</Text>
-                      </View>
-                      <View style={styles.characterDetailRow}>
-                        <Text style={styles.characterLabel}>Health: </Text>
-                        <Text style={styles.characterValue}>
-                          {character.currentHealth} / {character.maxHealth}
-                        </Text>
-                      </View>
 
                       <View style={styles.characterDetailRow}>
                         <Text style={styles.characterLabel}>Position: </Text>
                         <Text style={styles.characterValue}>
                           {character.position !== null ? character.position : 'N/A'}
                         </Text>
+                      </View>
+
+                      <View style={styles.counterSection}>
+                        <View style={styles.counterRow}>
+                          <Text style={styles.counterLabel}>Health: </Text>
+                          <View style={styles.counterControls}>
+                            <TouchableOpacity
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                handleDecrementHealth(character);
+                              }}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="minus"
+                                size={14}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
+                            <Text style={styles.counterValue}>
+                              {character.currentHealth} / {character.maxHealth}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                handleIncrementHealth(character);
+                              }}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="plus"
+                                size={14}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+
+                        <View style={styles.counterRow}>
+                          <Text style={styles.counterLabel}>Surges: </Text>
+                          <View style={styles.counterControls}>
+                            <TouchableOpacity
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                handleDecrementSurges(character);
+                              }}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="minus"
+                                size={14}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
+                            <Text style={styles.counterValue}>
+                              {character.surges !== null ? character.surges : 'N/A'}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                handleIncrementSurges(character);
+                              }}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="plus"
+                                size={14}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
                       </View>
                     </View>
                   </TouchableOpacity>
@@ -339,6 +448,41 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: Colors.dark.text,
+  },
+  counterSection: {
+    marginTop: 12,
+    gap: 8,
+  },
+  counterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  counterLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.dark.textSecondary,
+    minWidth: 70,
+  },
+  counterControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  smallCounterButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.dark.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  counterValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.dark.text,
+    minWidth: 60,
+    textAlign: 'center',
   },
 });
 
