@@ -151,11 +151,22 @@ export default function PartyScreen() {
             ) : (
               <View style={[
                 styles.charactersContainer,
+                isTablet && styles.charactersContainerTablet
               ]}>
-                {characters.map((character, index) => (
+                {[...characters].sort((a, b) => {
+                  // Characters with null position go last
+                  if (a.position === null && b.position === null) return 0;
+                  if (a.position === null) return 1;
+                  if (b.position === null) return -1;
+                  // Sort by position number (lowest first)
+                  return a.position - b.position;
+                }).map((character, index) => (
                   <TouchableOpacity
                     key={index}
-                    style={styles.characterCard}
+                    style={[
+                      styles.characterCard,
+                      isTablet && styles.characterCardTablet
+                    ]}
                     onPress={() => router.push({
                       pathname: '/CharacterDetails',
                       params: { id: character.id.toString() }
@@ -459,8 +470,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   counterLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     color: Colors.dark.textSecondary,
     minWidth: 70,
   },
