@@ -9,8 +9,9 @@ import { RegionSelector } from '@/components/RegionSelector';
 import { RollSelector } from '@/components/RollSelector';
 import { Colors } from '@/constants/theme';
 import { useResponsive } from '@/hooks/use-responsive';
-import { Character } from '@/constants/types';
+import { Character, ClassType } from '@/constants/types';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { API_KEY, API_URL } from '@/constants';
 
 export default function CharacterDetailsScreen() {
   const router = useRouter();
@@ -23,6 +24,8 @@ export default function CharacterDetailsScreen() {
   const [character, setCharacter] = useState<Character | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [classes, setClasses] = useState<ClassType[]>([]);
+  const [isLoadingClasses, setIsLoadingClasses] = useState(false);
 
   const positionBottomSheetRef = useRef<BottomSheet>(null);
   const positionSnapPoints = useMemo(() => ['50%'], []);
@@ -38,6 +41,9 @@ export default function CharacterDetailsScreen() {
   
   const defenseBottomSheetRef = useRef<BottomSheet>(null);
   const defenseSnapPoints = useMemo(() => ['40%'], []);
+  
+  const classBottomSheetRef = useRef<BottomSheet>(null);
+  const classSnapPoints = useMemo(() => ['90%'], []);
 
   useEffect(() => {
     const loadCharacter = async () => {
@@ -359,6 +365,87 @@ export default function CharacterDetailsScreen() {
     [closeDefenseBottomSheet]
   );
 
+  const openClassBottomSheet = useCallback(async () => {
+    setIsLoadingClasses(true);
+    setError(null);
+    
+    try {
+      const response = await fetch(`${API_URL}/api/v1/classes`, {
+        headers: {
+          'x-api-key': API_KEY,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch classes: ${response.status} ${response.statusText}`);
+      }
+
+      const classesData = await response.json();
+
+      if (!classesData || !classesData.classes) {
+        throw new Error('Invalid response format from classes endpoint');
+      }
+
+      setClasses(classesData.classes);
+      classBottomSheetRef.current?.snapToIndex(0);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      setError(errorMessage);
+      console.error('Error fetching classes:', error);
+    } finally {
+      setIsLoadingClasses(false);
+    }
+  }, []);
+
+  const closeClassBottomSheet = useCallback(() => {
+    classBottomSheetRef.current?.close();
+  }, []);
+
+  const handleClassSelect = async (selectedClass: ClassType) => {
+    if (!character) return;
+
+    try {
+      const charactersJson = await AsyncStorage.getItem('characters');
+      if (!charactersJson) return;
+
+      const charactersArray: Character[] = JSON.parse(charactersJson);
+      
+      // Find the matching class in the classes array
+      const matchingClass = classes.find(c => c.name === selectedClass.name);
+      
+      if (!matchingClass) {
+        setError('Selected class not found in classes array');
+        return;
+      }
+
+      // Update the character with the new class
+      const updatedCharacter = { ...character, class: matchingClass };
+      const updatedArray = charactersArray.map((char) =>
+        char.id === character.id ? updatedCharacter : char
+      );
+
+      await AsyncStorage.setItem('characters', JSON.stringify(updatedArray));
+      setCharacter(updatedCharacter);
+      closeClassBottomSheet();
+    } catch (error) {
+      console.error('Error updating class:', error);
+      setError('Failed to update class');
+    }
+  };
+
+  const renderClassBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeClassBottomSheet}
+      />
+    ),
+    [closeClassBottomSheet]
+  );
+
   return (
     <LinearGradient
       colors={colors.backgroundGradient as [string, string, ...string[]]}
@@ -399,10 +486,12 @@ export default function CharacterDetailsScreen() {
           </View>
 
           <View style={styles.content}>
-            {isLoading ? (
+            {isLoading || isLoadingClasses ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={colors.accent} />
-                <Text style={styles.loadingText}>Loading character...</Text>
+                <Text style={styles.loadingText}>
+                  {isLoading ? 'Loading character...' : 'Loading classes...'}
+                </Text>
               </View>
             ) : error ? (
               <View style={styles.errorContainer}>
@@ -412,14 +501,18 @@ export default function CharacterDetailsScreen() {
               </View>
             ) : character ? (
               <View style={styles.characterCard}>
-                <View style={styles.infoRow}>
+                  <View style={styles.infoRow}>
                 <Text style={styles.label}>Race:</Text>
                     <Text style={styles.value}>{character.race.name}</Text>
                   </View>
-                  <View style={styles.infoRow}>
+                  <TouchableOpacity
+                    style={styles.infoRow}
+                    onPress={openClassBottomSheet}
+                    activeOpacity={0.7}
+                  >
                     <Text style={styles.label}>Class:</Text>
                     <Text style={styles.value}>{character.class.name}</Text>
-                  </View>
+                  </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.infoRow}
                     onPress={openLevelBottomSheet}
@@ -836,6 +929,53 @@ export default function CharacterDetailsScreen() {
               </View>
             </View>
           </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Class Bottom Sheet */}
+      <BottomSheet
+        ref={classBottomSheetRef}
+        index={-1}
+        snapPoints={classSnapPoints}
+        enablePanDownToClose
+        enableContentPanningGesture={false}
+        backdropComponent={renderClassBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <View style={styles.bottomSheetHeader}>
+            <Text style={styles.bottomSheetHeaderText}>Select Class</Text>
+            <TouchableOpacity onPress={closeClassBottomSheet} style={styles.closeButton}>
+              <Text style={styles.closeButtonText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <BottomSheetScrollView 
+            contentContainerStyle={styles.positionOptionsContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {classes.map((classType) => {
+              const isSelected = character?.class.name === classType.name;
+              return (
+                <TouchableOpacity
+                  key={classType.name}
+                  style={[styles.positionOption, isSelected && styles.positionOptionSelected]}
+                  onPress={() => handleClassSelect(classType)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.positionOptionText, isSelected && styles.positionOptionTextSelected]}>
+                    {classType.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </BottomSheetScrollView>
         </LinearGradient>
       </BottomSheet>
 
