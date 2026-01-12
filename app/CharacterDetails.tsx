@@ -2,7 +2,7 @@ import { View, StyleSheet, TouchableOpacity, Text, ScrollView, ActivityIndicator
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
@@ -26,6 +26,18 @@ export default function CharacterDetailsScreen() {
 
   const positionBottomSheetRef = useRef<BottomSheet>(null);
   const positionSnapPoints = useMemo(() => ['50%'], []);
+  
+  const maxHealthBottomSheetRef = useRef<BottomSheet>(null);
+  const maxHealthSnapPoints = useMemo(() => ['40%'], []);
+  
+  const levelBottomSheetRef = useRef<BottomSheet>(null);
+  const levelSnapPoints = useMemo(() => ['40%'], []);
+  
+  const attackBottomSheetRef = useRef<BottomSheet>(null);
+  const attackSnapPoints = useMemo(() => ['40%'], []);
+  
+  const defenseBottomSheetRef = useRef<BottomSheet>(null);
+  const defenseSnapPoints = useMemo(() => ['40%'], []);
 
   useEffect(() => {
     const loadCharacter = async () => {
@@ -166,6 +178,187 @@ export default function CharacterDetailsScreen() {
     updateCharacterInStorage(updated);
   };
 
+  const openMaxHealthBottomSheet = useCallback(() => {
+    maxHealthBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeMaxHealthBottomSheet = useCallback(() => {
+    maxHealthBottomSheetRef.current?.close();
+  }, []);
+
+  const handleIncrementMaxHealth = useCallback(() => {
+    if (!character) return;
+    const updated = {
+      ...character,
+      maxHealth: character.maxHealth + 1,
+      // Ensure currentHealth doesn't exceed new maxHealth
+      currentHealth: Math.min(character.currentHealth, character.maxHealth + 1)
+    };
+    updateCharacterInStorage(updated);
+  }, [character, updateCharacterInStorage]);
+
+  const handleDecrementMaxHealth = useCallback(() => {
+    if (!character) return;
+    const updated = {
+      ...character,
+      maxHealth: Math.max(1, character.maxHealth - 1),
+      // Ensure currentHealth doesn't exceed new maxHealth
+      currentHealth: Math.min(character.currentHealth, character.maxHealth - 1)
+    };
+    updateCharacterInStorage(updated);
+  }, [character, updateCharacterInStorage]);
+
+  const renderMaxHealthBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeMaxHealthBottomSheet}
+      />
+    ),
+    [closeMaxHealthBottomSheet]
+  );
+
+  const openLevelBottomSheet = useCallback(() => {
+    levelBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeLevelBottomSheet = useCallback(() => {
+    levelBottomSheetRef.current?.close();
+  }, []);
+
+  const handleIncrementLevel = useCallback(() => {
+    if (!character) return;
+    const updated = {
+      ...character,
+      level: character.level + 1
+    };
+    updateCharacterInStorage(updated);
+  }, [character, updateCharacterInStorage]);
+
+  const handleDecrementLevel = useCallback(() => {
+    if (!character) return;
+    const updated = {
+      ...character,
+      level: Math.max(1, character.level - 1)
+    };
+    updateCharacterInStorage(updated);
+  }, [character, updateCharacterInStorage]);
+
+  const renderLevelBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeLevelBottomSheet}
+      />
+    ),
+    [closeLevelBottomSheet]
+  );
+
+  // Helper functions to convert between string format ("+X", "-X") and number
+  const parseStatValue = (value: string): number => {
+    if (value.startsWith('+')) {
+      return parseInt(value.substring(1), 10) || 0;
+    } else if (value.startsWith('-')) {
+      return parseInt(value, 10) || 0;
+    } else {
+      // Handle case where value might just be a number string
+      const parsed = parseInt(value, 10);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+  };
+
+  const formatStatValue = (value: number): string => {
+    if (value >= 0) {
+      return `+${value}`;
+    } else {
+      return `${value}`;
+    }
+  };
+
+  const openAttackBottomSheet = useCallback(() => {
+    attackBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeAttackBottomSheet = useCallback(() => {
+    attackBottomSheetRef.current?.close();
+  }, []);
+
+  const handleIncrementAttack = useCallback(() => {
+    if (!character) return;
+    const currentValue = parseStatValue(character.attack);
+    const updated = {
+      ...character,
+      attack: formatStatValue(currentValue + 1)
+    };
+    updateCharacterInStorage(updated);
+  }, [character, updateCharacterInStorage]);
+
+  const handleDecrementAttack = useCallback(() => {
+    if (!character) return;
+    const currentValue = parseStatValue(character.attack);
+    const updated = {
+      ...character,
+      attack: formatStatValue(currentValue - 1)
+    };
+    updateCharacterInStorage(updated);
+  }, [character, updateCharacterInStorage]);
+
+  const renderAttackBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeAttackBottomSheet}
+      />
+    ),
+    [closeAttackBottomSheet]
+  );
+
+  const openDefenseBottomSheet = useCallback(() => {
+    defenseBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeDefenseBottomSheet = useCallback(() => {
+    defenseBottomSheetRef.current?.close();
+  }, []);
+
+  const handleIncrementDefense = useCallback(() => {
+    if (!character) return;
+    const currentValue = parseStatValue(character.defense);
+    const updated = {
+      ...character,
+      defense: formatStatValue(currentValue + 1)
+    };
+    updateCharacterInStorage(updated);
+  }, [character, updateCharacterInStorage]);
+
+  const handleDecrementDefense = useCallback(() => {
+    if (!character) return;
+    const currentValue = parseStatValue(character.defense);
+    const updated = {
+      ...character,
+      defense: formatStatValue(currentValue - 1)
+    };
+    updateCharacterInStorage(updated);
+  }, [character, updateCharacterInStorage]);
+
+  const renderDefenseBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeDefenseBottomSheet}
+      />
+    ),
+    [closeDefenseBottomSheet]
+  );
+
   return (
     <LinearGradient
       colors={colors.backgroundGradient as [string, string, ...string[]]}
@@ -227,20 +420,32 @@ export default function CharacterDetailsScreen() {
                     <Text style={styles.label}>Class:</Text>
                     <Text style={styles.value}>{character.class.name}</Text>
                   </View>
-                  <View style={styles.infoRow}>
+                  <TouchableOpacity
+                    style={styles.infoRow}
+                    onPress={openLevelBottomSheet}
+                    activeOpacity={0.7}
+                  >
                     <Text style={styles.label}>Level:</Text>
                     <Text style={styles.value}>{character.level}</Text>
-                  </View>
+                  </TouchableOpacity>
 
                 <View style={styles.section}>
-                  <View style={styles.infoRow}>
+                  <TouchableOpacity
+                    style={styles.infoRow}
+                    onPress={openAttackBottomSheet}
+                    activeOpacity={0.7}
+                  >
                     <Text style={styles.label}>Attack:</Text>
                     <Text style={styles.value}>{character.attack}</Text>
-                  </View>
-                  <View style={styles.infoRow}>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.infoRow}
+                    onPress={openDefenseBottomSheet}
+                    activeOpacity={0.7}
+                  >
                     <Text style={styles.label}>Defense:</Text>
                     <Text style={styles.value}>{character.defense}</Text>
-                  </View>
+                  </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.infoRow}
                     onPress={openPositionBottomSheet}
@@ -306,7 +511,12 @@ export default function CharacterDetailsScreen() {
                 </View>
 
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Health</Text>
+                  <TouchableOpacity
+                    onLongPress={openMaxHealthBottomSheet}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.sectionTitle}>Health</Text>
+                  </TouchableOpacity>
                   <View style={styles.counterContainer}>
                     <TouchableOpacity
                       onPress={handleDecrementHealth}
@@ -386,6 +596,246 @@ export default function CharacterDetailsScreen() {
               );
             })}
           </BottomSheetScrollView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Max Health Bottom Sheet */}
+      <BottomSheet
+        ref={maxHealthBottomSheetRef}
+        index={-1}
+        snapPoints={maxHealthSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderMaxHealthBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>
+                {character ? `${character.name}'s Max Health` : 'Max Health'}
+              </Text>
+              <TouchableOpacity onPress={closeMaxHealthBottomSheet} style={styles.closeButton}>
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.maxHealthContainer}>
+              <Text style={styles.maxHealthLabel}>Current Max Health:</Text>
+              <View style={styles.maxHealthControls}>
+                <TouchableOpacity
+                  onPress={handleDecrementMaxHealth}
+                  style={styles.maxHealthButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol
+                    name="minus"
+                    size={24}
+                    color={Colors.dark.text}
+                  />
+                </TouchableOpacity>
+                <Text style={styles.maxHealthValue}>
+                  {character?.maxHealth ?? 0}
+                </Text>
+                <TouchableOpacity
+                  onPress={handleIncrementMaxHealth}
+                  style={styles.maxHealthButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol
+                    name="plus"
+                    size={24}
+                    color={Colors.dark.text}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Level Bottom Sheet */}
+      <BottomSheet
+        ref={levelBottomSheetRef}
+        index={-1}
+        snapPoints={levelSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderLevelBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>
+                {character ? `${character.name}'s Level` : 'Level'}
+              </Text>
+              <TouchableOpacity onPress={closeLevelBottomSheet} style={styles.closeButton}>
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.maxHealthContainer}>
+              <Text style={styles.maxHealthLabel}>Current Level:</Text>
+              <View style={styles.maxHealthControls}>
+                <TouchableOpacity
+                  onPress={handleDecrementLevel}
+                  style={styles.maxHealthButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol
+                    name="minus"
+                    size={24}
+                    color={Colors.dark.text}
+                  />
+                </TouchableOpacity>
+                <Text style={styles.maxHealthValue}>
+                  {character?.level ?? 1}
+                </Text>
+                <TouchableOpacity
+                  onPress={handleIncrementLevel}
+                  style={styles.maxHealthButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol
+                    name="plus"
+                    size={24}
+                    color={Colors.dark.text}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Attack Bottom Sheet */}
+      <BottomSheet
+        ref={attackBottomSheetRef}
+        index={-1}
+        snapPoints={attackSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderAttackBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>
+                {character ? `${character.name}'s Attack` : 'Attack'}
+              </Text>
+              <TouchableOpacity onPress={closeAttackBottomSheet} style={styles.closeButton}>
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.maxHealthContainer}>
+              <Text style={styles.maxHealthLabel}>Current Attack:</Text>
+              <View style={styles.maxHealthControls}>
+                <TouchableOpacity
+                  onPress={handleDecrementAttack}
+                  style={styles.maxHealthButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol
+                    name="minus"
+                    size={24}
+                    color={Colors.dark.text}
+                  />
+                </TouchableOpacity>
+                <Text style={styles.maxHealthValue}>
+                  {character ? character.attack : '+0'}
+                </Text>
+                <TouchableOpacity
+                  onPress={handleIncrementAttack}
+                  style={styles.maxHealthButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol
+                    name="plus"
+                    size={24}
+                    color={Colors.dark.text}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Defense Bottom Sheet */}
+      <BottomSheet
+        ref={defenseBottomSheetRef}
+        index={-1}
+        snapPoints={defenseSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderDefenseBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>
+                {character ? `${character.name}'s Defense` : 'Defense'}
+              </Text>
+              <TouchableOpacity onPress={closeDefenseBottomSheet} style={styles.closeButton}>
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.maxHealthContainer}>
+              <Text style={styles.maxHealthLabel}>Current Defense:</Text>
+              <View style={styles.maxHealthControls}>
+                <TouchableOpacity
+                  onPress={handleDecrementDefense}
+                  style={styles.maxHealthButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol
+                    name="minus"
+                    size={24}
+                    color={Colors.dark.text}
+                  />
+                </TouchableOpacity>
+                <Text style={styles.maxHealthValue}>
+                  {character ? character.defense : '+0'}
+                </Text>
+                <TouchableOpacity
+                  onPress={handleIncrementDefense}
+                  style={styles.maxHealthButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol
+                    name="plus"
+                    size={24}
+                    color={Colors.dark.text}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BottomSheetView>
         </LinearGradient>
       </BottomSheet>
 
@@ -651,6 +1101,40 @@ const styles = StyleSheet.create({
   positionOptionTextSelected: {
     color: Colors.dark.text,
     fontWeight: '600',
+  },
+  bottomSheetContent: {
+    padding: 24,
+    paddingBottom: 40,
+    flex: 1,
+  },
+  maxHealthContainer: {
+    alignItems: 'center',
+    gap: 24,
+  },
+  maxHealthLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.dark.textSecondary,
+  },
+  maxHealthControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 24,
+  },
+  maxHealthButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.dark.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  maxHealthValue: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: Colors.dark.text,
+    minWidth: 80,
+    textAlign: 'center',
   },
 });
 
