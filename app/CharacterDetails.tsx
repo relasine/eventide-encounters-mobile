@@ -1,8 +1,19 @@
-import { View, StyleSheet, TouchableOpacity, Text, ScrollView, ActivityIndicator } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView, BottomSheetView } from '@gorhom/bottom-sheet';
+import BottomSheet, {
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+  BottomSheetView,
+} from '@gorhom/bottom-sheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
@@ -19,8 +30,11 @@ export default function CharacterDetailsScreen() {
   const { region } = useRegion();
   const colors = Colors.dark;
   const { isTablet } = useResponsive();
-  
-  const characterId: string | null = params.id !== undefined && params.id !== null ? (params.id as string) : null;
+
+  const characterId: string | null =
+    params.id !== undefined && params.id !== null
+      ? (params.id as string)
+      : null;
   const [character, setCharacter] = useState<Character | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,21 +43,24 @@ export default function CharacterDetailsScreen() {
 
   const positionBottomSheetRef = useRef<BottomSheet>(null);
   const positionSnapPoints = useMemo(() => ['50%'], []);
-  
+
   const maxHealthBottomSheetRef = useRef<BottomSheet>(null);
   const maxHealthSnapPoints = useMemo(() => ['40%'], []);
-  
+
   const levelBottomSheetRef = useRef<BottomSheet>(null);
   const levelSnapPoints = useMemo(() => ['40%'], []);
-  
+
   const attackBottomSheetRef = useRef<BottomSheet>(null);
   const attackSnapPoints = useMemo(() => ['40%'], []);
-  
+
   const defenseBottomSheetRef = useRef<BottomSheet>(null);
   const defenseSnapPoints = useMemo(() => ['40%'], []);
-  
+
   const classBottomSheetRef = useRef<BottomSheet>(null);
   const classSnapPoints = useMemo(() => ['90%'], []);
+
+  const deleteConfirmationBottomSheetRef = useRef<BottomSheet>(null);
+  const deleteConfirmationSnapPoints = useMemo(() => ['30%'], []);
 
   useEffect(() => {
     const loadCharacter = async () => {
@@ -63,7 +80,9 @@ export default function CharacterDetailsScreen() {
         }
 
         const charactersArray: Character[] = JSON.parse(charactersJson);
-        const foundCharacter = charactersArray.find((char) => char.id === characterId);
+        const foundCharacter = charactersArray.find(
+          char => char.id === characterId
+        );
 
         if (!foundCharacter) {
           throw new Error('Character not found');
@@ -71,7 +90,10 @@ export default function CharacterDetailsScreen() {
 
         setCharacter(foundCharacter);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'An unexpected error occurred';
         setError(errorMessage);
         console.error('Error loading character:', error);
       } finally {
@@ -88,7 +110,7 @@ export default function CharacterDetailsScreen() {
       if (!charactersJson) return;
 
       const charactersArray: Character[] = JSON.parse(charactersJson);
-      const updatedArray = charactersArray.map((char) =>
+      const updatedArray = charactersArray.map(char =>
         char.id === updatedCharacter.id ? updatedCharacter : char
       );
 
@@ -108,7 +130,9 @@ export default function CharacterDetailsScreen() {
     positionBottomSheetRef.current?.close();
   }, []);
 
-  const handlePositionSelect = async (selectedPosition: 1 | 2 | 3 | 4 | null) => {
+  const handlePositionSelect = async (
+    selectedPosition: 1 | 2 | 3 | 4 | null
+  ) => {
     if (!character) return;
 
     try {
@@ -116,10 +140,10 @@ export default function CharacterDetailsScreen() {
       if (!charactersJson) return;
 
       const charactersArray: Character[] = JSON.parse(charactersJson);
-      
+
       // If selecting a position (1-4), clear all other characters with that position
       if (selectedPosition !== null) {
-        charactersArray.forEach((char) => {
+        charactersArray.forEach(char => {
           if (char.position === selectedPosition && char.id !== character.id) {
             char.position = null;
           }
@@ -128,7 +152,7 @@ export default function CharacterDetailsScreen() {
 
       // Update the current character's position
       const updatedCharacter = { ...character, position: selectedPosition };
-      const updatedArray = charactersArray.map((char) =>
+      const updatedArray = charactersArray.map(char =>
         char.id === character.id ? updatedCharacter : char
       );
 
@@ -153,9 +177,9 @@ export default function CharacterDetailsScreen() {
     [closePositionBottomSheet]
   );
 
-
   const handleIncrementSurges = () => {
-    if (!character || character?.surges === null || character?.surges >= 5) return;
+    if (!character || character?.surges === null || character?.surges >= 5)
+      return;
     const updated = { ...character, surges: character.surges + 1 };
     updateCharacterInStorage(updated);
   };
@@ -174,7 +198,10 @@ export default function CharacterDetailsScreen() {
 
   const handleDecrementGlowstone = () => {
     if (!character) return;
-    const updated = { ...character, glowstone: Math.max(0, character.glowstone - 1) };
+    const updated = {
+      ...character,
+      glowstone: Math.max(0, character.glowstone - 1),
+    };
     updateCharacterInStorage(updated);
   };
 
@@ -186,24 +213,27 @@ export default function CharacterDetailsScreen() {
 
   const handleDecrementEssence = () => {
     if (!character) return;
-    const updated = { ...character, essence: Math.max(0, character.essence - 1) };
+    const updated = {
+      ...character,
+      essence: Math.max(0, character.essence - 1),
+    };
     updateCharacterInStorage(updated);
   };
 
   const handleIncrementHealth = () => {
     if (!character) return;
-    const updated = { 
-      ...character, 
-      currentHealth: Math.min(character.maxHealth, character.currentHealth + 1) 
+    const updated = {
+      ...character,
+      currentHealth: Math.min(character.maxHealth, character.currentHealth + 1),
     };
     updateCharacterInStorage(updated);
   };
 
   const handleDecrementHealth = () => {
     if (!character) return;
-    const updated = { 
-      ...character, 
-      currentHealth: Math.max(0, character.currentHealth - 1) 
+    const updated = {
+      ...character,
+      currentHealth: Math.max(0, character.currentHealth - 1),
     };
     updateCharacterInStorage(updated);
   };
@@ -222,7 +252,7 @@ export default function CharacterDetailsScreen() {
       ...character,
       maxHealth: character.maxHealth + 1,
       // Ensure currentHealth doesn't exceed new maxHealth
-      currentHealth: Math.min(character.currentHealth, character.maxHealth + 1)
+      currentHealth: Math.min(character.currentHealth, character.maxHealth + 1),
     };
     updateCharacterInStorage(updated);
   }, [character, updateCharacterInStorage]);
@@ -233,7 +263,7 @@ export default function CharacterDetailsScreen() {
       ...character,
       maxHealth: Math.max(1, character.maxHealth - 1),
       // Ensure currentHealth doesn't exceed new maxHealth
-      currentHealth: Math.min(character.currentHealth, character.maxHealth - 1)
+      currentHealth: Math.min(character.currentHealth, character.maxHealth - 1),
     };
     updateCharacterInStorage(updated);
   }, [character, updateCharacterInStorage]);
@@ -262,7 +292,7 @@ export default function CharacterDetailsScreen() {
     if (!character) return;
     const updated = {
       ...character,
-      level: character.level + 1
+      level: character.level + 1,
     };
     updateCharacterInStorage(updated);
   }, [character, updateCharacterInStorage]);
@@ -271,7 +301,7 @@ export default function CharacterDetailsScreen() {
     if (!character) return;
     const updated = {
       ...character,
-      level: Math.max(1, character.level - 1)
+      level: Math.max(1, character.level - 1),
     };
     updateCharacterInStorage(updated);
   }, [character, updateCharacterInStorage]);
@@ -322,7 +352,7 @@ export default function CharacterDetailsScreen() {
     const currentValue = parseStatValue(character.attack);
     const updated = {
       ...character,
-      attack: formatStatValue(currentValue + 1)
+      attack: formatStatValue(currentValue + 1),
     };
     updateCharacterInStorage(updated);
   }, [character, updateCharacterInStorage]);
@@ -332,7 +362,7 @@ export default function CharacterDetailsScreen() {
     const currentValue = parseStatValue(character.attack);
     const updated = {
       ...character,
-      attack: formatStatValue(currentValue - 1)
+      attack: formatStatValue(currentValue - 1),
     };
     updateCharacterInStorage(updated);
   }, [character, updateCharacterInStorage]);
@@ -362,7 +392,7 @@ export default function CharacterDetailsScreen() {
     const currentValue = parseStatValue(character.defense);
     const updated = {
       ...character,
-      defense: formatStatValue(currentValue + 1)
+      defense: formatStatValue(currentValue + 1),
     };
     updateCharacterInStorage(updated);
   }, [character, updateCharacterInStorage]);
@@ -372,7 +402,7 @@ export default function CharacterDetailsScreen() {
     const currentValue = parseStatValue(character.defense);
     const updated = {
       ...character,
-      defense: formatStatValue(currentValue - 1)
+      defense: formatStatValue(currentValue - 1),
     };
     updateCharacterInStorage(updated);
   }, [character, updateCharacterInStorage]);
@@ -392,17 +422,19 @@ export default function CharacterDetailsScreen() {
   const openClassBottomSheet = useCallback(async () => {
     setIsLoadingClasses(true);
     setError(null);
-    
+
     try {
       const response = await fetch(`${API_URL}/api/v1/classes`, {
         headers: {
           'x-api-key': API_KEY,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch classes: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Failed to fetch classes: ${response.status} ${response.statusText}`
+        );
       }
 
       const classesData = await response.json();
@@ -414,7 +446,8 @@ export default function CharacterDetailsScreen() {
       setClasses(classesData.classes);
       classBottomSheetRef.current?.snapToIndex(0);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      const errorMessage =
+        error instanceof Error ? error.message : 'An unexpected error occurred';
       setError(errorMessage);
       console.error('Error fetching classes:', error);
     } finally {
@@ -434,10 +467,10 @@ export default function CharacterDetailsScreen() {
       if (!charactersJson) return;
 
       const charactersArray: Character[] = JSON.parse(charactersJson);
-      
+
       // Find the matching class in the classes array
       const matchingClass = classes.find(c => c.name === selectedClass.name);
-      
+
       if (!matchingClass) {
         setError('Selected class not found in classes array');
         return;
@@ -445,7 +478,7 @@ export default function CharacterDetailsScreen() {
 
       // Update the character with the new class
       const updatedCharacter = { ...character, class: matchingClass };
-      const updatedArray = charactersArray.map((char) =>
+      const updatedArray = charactersArray.map(char =>
         char.id === character.id ? updatedCharacter : char
       );
 
@@ -470,6 +503,53 @@ export default function CharacterDetailsScreen() {
     [closeClassBottomSheet]
   );
 
+  const openDeleteConfirmation = useCallback(() => {
+    deleteConfirmationBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeDeleteConfirmation = useCallback(() => {
+    deleteConfirmationBottomSheetRef.current?.close();
+  }, []);
+
+  const handleDeleteCharacter = useCallback(async () => {
+    if (!character) return;
+
+    try {
+      const charactersJson = await AsyncStorage.getItem('characters');
+      if (charactersJson) {
+        const charactersArray: Character[] = JSON.parse(charactersJson);
+        // Remove the character that matches the one to delete
+        const updatedCharacters = charactersArray.filter(
+          char => char.id !== character.id
+        );
+
+        // Save updated array back to AsyncStorage
+        await AsyncStorage.setItem(
+          'characters',
+          JSON.stringify(updatedCharacters)
+        );
+      }
+      closeDeleteConfirmation();
+      // Navigate back to party screen
+      router.push('/(tabs)/party');
+    } catch (error) {
+      console.error('Error deleting character:', error);
+      setError('Failed to delete character');
+    }
+  }, [character, closeDeleteConfirmation, router]);
+
+  const renderDeleteConfirmationBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeDeleteConfirmation}
+      />
+    ),
+    [closeDeleteConfirmation]
+  );
+
   return (
     <LinearGradient
       colors={colors.backgroundGradient as [string, string, ...string[]]}
@@ -483,27 +563,27 @@ export default function CharacterDetailsScreen() {
           style={styles.backButton}
           activeOpacity={0.7}
         >
-          <IconSymbol
-            name="chevron.left"
-            size={24}
-            color={colors.text}
-          />
+          <IconSymbol name="chevron.left" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>{character?.name || 'Character Details'}</Text>
+        <Text style={styles.title}>
+          {character?.name || 'Character Details'}
+        </Text>
         <View style={styles.placeholder} />
       </View>
 
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          isTablet && styles.scrollContentTablet
+          isTablet && styles.scrollContentTablet,
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[
-          styles.contentWrapper,
-          isTablet && styles.contentWrapperTablet
-        ]}>
+        <View
+          style={[
+            styles.contentWrapper,
+            isTablet && styles.contentWrapperTablet,
+          ]}
+        >
           <View style={styles.headerSection}>
             <RegionSelector />
             <RollSelector />
@@ -533,14 +613,18 @@ export default function CharacterDetailsScreen() {
               </View>
             ) : character ? (
               <View style={styles.characterCard}>
-                <View style={[
-                  styles.infoContainer,
-                  isTablet && styles.infoContainerTablet
-                ]}>
-                  <View style={[
-                    styles.infoColumn,
-                    isTablet && styles.infoColumnTablet
-                  ]}>
+                <View
+                  style={[
+                    styles.infoContainer,
+                    isTablet && styles.infoContainerTablet,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.infoColumn,
+                      isTablet && styles.infoColumnTablet,
+                    ]}
+                  >
                     <View style={styles.infoRow}>
                       <Text style={styles.label}>Race:</Text>
                       <Text style={styles.value}>{character.race.name}</Text>
@@ -563,10 +647,9 @@ export default function CharacterDetailsScreen() {
                     </TouchableOpacity>
                   </View>
 
-                  <View style={[
-                    styles.section,
-                    isTablet && styles.sectionTablet
-                  ]}>
+                  <View
+                    style={[styles.section, isTablet && styles.sectionTablet]}
+                  >
                     <TouchableOpacity
                       style={styles.infoRow}
                       onPress={openAttackBottomSheet}
@@ -590,21 +673,27 @@ export default function CharacterDetailsScreen() {
                     >
                       <Text style={styles.label}>Position:</Text>
                       <Text style={styles.value}>
-                        {character.position !== null ? character.position : 'N/A'}
+                        {character.position !== null
+                          ? character.position
+                          : 'N/A'}
                       </Text>
                     </TouchableOpacity>
                   </View>
                 </View>
 
                 <View style={styles.counterSection}>
-                  <View style={[
-                    styles.counterRowContainer,
-                    isTablet && styles.counterRowContainerTablet
-                  ]}>
-                    <View style={[
-                      styles.counterRow,
-                      isTablet && styles.counterRowTablet
-                    ]}>
+                  <View
+                    style={[
+                      styles.counterRowContainer,
+                      isTablet && styles.counterRowContainerTablet,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.counterRow,
+                        isTablet && styles.counterRowTablet,
+                      ]}
+                    >
                       <TouchableOpacity
                         onLongPress={openMaxHealthBottomSheet}
                         activeOpacity={0.7}
@@ -619,7 +708,7 @@ export default function CharacterDetailsScreen() {
                         >
                           <IconSymbol
                             name="minus"
-                            size={14}
+                            size={17}
                             color={Colors.dark.text}
                           />
                         </TouchableOpacity>
@@ -633,17 +722,19 @@ export default function CharacterDetailsScreen() {
                         >
                           <IconSymbol
                             name="plus"
-                            size={14}
+                            size={17}
                             color={Colors.dark.text}
                           />
                         </TouchableOpacity>
                       </View>
                     </View>
 
-                    <View style={[
-                      styles.counterRow,
-                      isTablet && styles.counterRowTablet
-                    ]}>
+                    <View
+                      style={[
+                        styles.counterRow,
+                        isTablet && styles.counterRowTablet,
+                      ]}
+                    >
                       <Text style={styles.counterLabel}>Surges: </Text>
                       <View style={styles.counterControls}>
                         <TouchableOpacity
@@ -653,7 +744,7 @@ export default function CharacterDetailsScreen() {
                         >
                           <IconSymbol
                             name="minus"
-                            size={14}
+                            size={17}
                             color={Colors.dark.text}
                           />
                         </TouchableOpacity>
@@ -667,17 +758,19 @@ export default function CharacterDetailsScreen() {
                         >
                           <IconSymbol
                             name="plus"
-                            size={14}
+                            size={17}
                             color={Colors.dark.text}
                           />
                         </TouchableOpacity>
                       </View>
                     </View>
 
-                    <View style={[
-                      styles.counterRow,
-                      isTablet && styles.counterRowTablet
-                    ]}>
+                    <View
+                      style={[
+                        styles.counterRow,
+                        isTablet && styles.counterRowTablet,
+                      ]}
+                    >
                       <Text style={styles.counterLabel}>Glowstone: </Text>
                       <View style={styles.counterControls}>
                         <TouchableOpacity
@@ -687,7 +780,7 @@ export default function CharacterDetailsScreen() {
                         >
                           <IconSymbol
                             name="minus"
-                            size={14}
+                            size={17}
                             color={Colors.dark.text}
                           />
                         </TouchableOpacity>
@@ -701,17 +794,19 @@ export default function CharacterDetailsScreen() {
                         >
                           <IconSymbol
                             name="plus"
-                            size={14}
+                            size={17}
                             color={Colors.dark.text}
                           />
                         </TouchableOpacity>
                       </View>
                     </View>
 
-                    <View style={[
-                      styles.counterRow,
-                      isTablet && styles.counterRowTablet
-                    ]}>
+                    <View
+                      style={[
+                        styles.counterRow,
+                        isTablet && styles.counterRowTablet,
+                      ]}
+                    >
                       <Text style={styles.counterLabel}>Essence: </Text>
                       <View style={styles.counterControls}>
                         <TouchableOpacity
@@ -721,7 +816,7 @@ export default function CharacterDetailsScreen() {
                         >
                           <IconSymbol
                             name="minus"
-                            size={14}
+                            size={17}
                             color={Colors.dark.text}
                           />
                         </TouchableOpacity>
@@ -735,7 +830,7 @@ export default function CharacterDetailsScreen() {
                         >
                           <IconSymbol
                             name="plus"
-                            size={14}
+                            size={17}
                             color={Colors.dark.text}
                           />
                         </TouchableOpacity>
@@ -747,23 +842,35 @@ export default function CharacterDetailsScreen() {
                 <View style={styles.abilitySection}>
                   <Text style={styles.abilityText}>
                     <Text style={styles.abilityLabel}>Racial Ability: </Text>
-                    <Text style={styles.abilityName}>{character.race.racialAbility.name}</Text>
-                    <Text style={styles.abilityValue}> - {character.race.racialAbility.ability}</Text>
+                    <Text style={styles.abilityName}>
+                      {character.race.racialAbility.name}
+                    </Text>
+                    <Text style={styles.abilityValue}>
+                      {' '}
+                      - {character.race.racialAbility.ability}
+                    </Text>
                   </Text>
                 </View>
 
                 <View style={styles.abilitySection}>
                   <Text style={styles.abilityText}>
                     <Text style={styles.abilityLabel}>Class Ability: </Text>
-                    <Text style={styles.abilityName}>{character.class.classAbility.name}</Text>
-                    <Text style={styles.abilityValue}> - {character.class.classAbility.ability}</Text>
+                    <Text style={styles.abilityName}>
+                      {character.class.classAbility.name}
+                    </Text>
+                    <Text style={styles.abilityValue}>
+                      {' '}
+                      - {character.class.classAbility.ability}
+                    </Text>
                   </Text>
                 </View>
 
                 <View style={styles.abilitySection}>
                   <Text style={styles.abilityText}>
                     <Text style={styles.abilityLabel}>Class Passive: </Text>
-                    <Text style={styles.abilityValue}>{character.class.classPassive}</Text>
+                    <Text style={styles.abilityValue}>
+                      {character.class.classPassive}
+                    </Text>
                   </Text>
                 </View>
               </View>
@@ -771,6 +878,19 @@ export default function CharacterDetailsScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Delete Character Button */}
+      {character && (
+        <View style={[styles.footer, isTablet && styles.footerTablet]}>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={openDeleteConfirmation}
+            activeOpacity={0.9}
+          >
+            <Text style={styles.deleteButtonText}>Delete Character</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Position Bottom Sheet */}
       <BottomSheet
@@ -784,33 +904,47 @@ export default function CharacterDetailsScreen() {
         handleIndicatorStyle={styles.handleIndicator}
       >
         <LinearGradient
-          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradientBackground}
         >
           <View style={styles.bottomSheetHeader}>
             <Text style={styles.bottomSheetHeaderText}>Select Position</Text>
-            <TouchableOpacity onPress={closePositionBottomSheet} style={styles.closeButton}>
+            <TouchableOpacity
+              onPress={closePositionBottomSheet}
+              style={styles.closeButton}
+            >
               <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
           </View>
-          
-          <BottomSheetScrollView 
+
+          <BottomSheetScrollView
             contentContainerStyle={styles.positionOptionsContent}
             showsVerticalScrollIndicator={false}
           >
-            {([1, 2, 3, 4, null] as const).map((position) => {
+            {([1, 2, 3, 4, null] as const).map(position => {
               const isSelected = character?.position === position;
-              const displayText = position !== null ? position.toString() : 'None';
+              const displayText =
+                position !== null ? position.toString() : 'None';
               return (
                 <TouchableOpacity
                   key={position !== null ? position : 'none'}
-                  style={[styles.positionOption, isSelected && styles.positionOptionSelected]}
+                  style={[
+                    styles.positionOption,
+                    isSelected && styles.positionOptionSelected,
+                  ]}
                   onPress={() => handlePositionSelect(position)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.positionOptionText, isSelected && styles.positionOptionTextSelected]}>
+                  <Text
+                    style={[
+                      styles.positionOptionText,
+                      isSelected && styles.positionOptionTextSelected,
+                    ]}
+                  >
                     {displayText}
                   </Text>
                 </TouchableOpacity>
@@ -831,7 +965,9 @@ export default function CharacterDetailsScreen() {
         handleIndicatorStyle={styles.handleIndicator}
       >
         <LinearGradient
-          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradientBackground}
@@ -841,11 +977,14 @@ export default function CharacterDetailsScreen() {
               <Text style={styles.bottomSheetHeaderText}>
                 {character ? `${character.name}'s Max Health` : 'Max Health'}
               </Text>
-              <TouchableOpacity onPress={closeMaxHealthBottomSheet} style={styles.closeButton}>
+              <TouchableOpacity
+                onPress={closeMaxHealthBottomSheet}
+                style={styles.closeButton}
+              >
                 <Text style={styles.closeButtonText}>✕</Text>
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.maxHealthContainer}>
               <Text style={styles.maxHealthLabel}>Current Max Health:</Text>
               <View style={styles.maxHealthControls}>
@@ -854,11 +993,7 @@ export default function CharacterDetailsScreen() {
                   style={styles.maxHealthButton}
                   activeOpacity={0.7}
                 >
-                  <IconSymbol
-                    name="minus"
-                    size={24}
-                    color={Colors.dark.text}
-                  />
+                  <IconSymbol name="minus" size={24} color={Colors.dark.text} />
                 </TouchableOpacity>
                 <Text style={styles.maxHealthValue}>
                   {character?.maxHealth ?? 0}
@@ -868,11 +1003,7 @@ export default function CharacterDetailsScreen() {
                   style={styles.maxHealthButton}
                   activeOpacity={0.7}
                 >
-                  <IconSymbol
-                    name="plus"
-                    size={24}
-                    color={Colors.dark.text}
-                  />
+                  <IconSymbol name="plus" size={24} color={Colors.dark.text} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -891,7 +1022,9 @@ export default function CharacterDetailsScreen() {
         handleIndicatorStyle={styles.handleIndicator}
       >
         <LinearGradient
-          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradientBackground}
@@ -901,11 +1034,14 @@ export default function CharacterDetailsScreen() {
               <Text style={styles.bottomSheetHeaderText}>
                 {character ? `${character.name}'s Level` : 'Level'}
               </Text>
-              <TouchableOpacity onPress={closeLevelBottomSheet} style={styles.closeButton}>
+              <TouchableOpacity
+                onPress={closeLevelBottomSheet}
+                style={styles.closeButton}
+              >
                 <Text style={styles.closeButtonText}>✕</Text>
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.maxHealthContainer}>
               <Text style={styles.maxHealthLabel}>Current Level:</Text>
               <View style={styles.maxHealthControls}>
@@ -914,11 +1050,7 @@ export default function CharacterDetailsScreen() {
                   style={styles.maxHealthButton}
                   activeOpacity={0.7}
                 >
-                  <IconSymbol
-                    name="minus"
-                    size={24}
-                    color={Colors.dark.text}
-                  />
+                  <IconSymbol name="minus" size={24} color={Colors.dark.text} />
                 </TouchableOpacity>
                 <Text style={styles.maxHealthValue}>
                   {character?.level ?? 1}
@@ -928,11 +1060,7 @@ export default function CharacterDetailsScreen() {
                   style={styles.maxHealthButton}
                   activeOpacity={0.7}
                 >
-                  <IconSymbol
-                    name="plus"
-                    size={24}
-                    color={Colors.dark.text}
-                  />
+                  <IconSymbol name="plus" size={24} color={Colors.dark.text} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -951,7 +1079,9 @@ export default function CharacterDetailsScreen() {
         handleIndicatorStyle={styles.handleIndicator}
       >
         <LinearGradient
-          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradientBackground}
@@ -961,11 +1091,14 @@ export default function CharacterDetailsScreen() {
               <Text style={styles.bottomSheetHeaderText}>
                 {character ? `${character.name}'s Attack` : 'Attack'}
               </Text>
-              <TouchableOpacity onPress={closeAttackBottomSheet} style={styles.closeButton}>
+              <TouchableOpacity
+                onPress={closeAttackBottomSheet}
+                style={styles.closeButton}
+              >
                 <Text style={styles.closeButtonText}>✕</Text>
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.maxHealthContainer}>
               <Text style={styles.maxHealthLabel}>Current Attack:</Text>
               <View style={styles.maxHealthControls}>
@@ -974,11 +1107,7 @@ export default function CharacterDetailsScreen() {
                   style={styles.maxHealthButton}
                   activeOpacity={0.7}
                 >
-                  <IconSymbol
-                    name="minus"
-                    size={24}
-                    color={Colors.dark.text}
-                  />
+                  <IconSymbol name="minus" size={24} color={Colors.dark.text} />
                 </TouchableOpacity>
                 <Text style={styles.maxHealthValue}>
                   {character ? character.attack : '+0'}
@@ -988,11 +1117,7 @@ export default function CharacterDetailsScreen() {
                   style={styles.maxHealthButton}
                   activeOpacity={0.7}
                 >
-                  <IconSymbol
-                    name="plus"
-                    size={24}
-                    color={Colors.dark.text}
-                  />
+                  <IconSymbol name="plus" size={24} color={Colors.dark.text} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -1011,7 +1136,9 @@ export default function CharacterDetailsScreen() {
         handleIndicatorStyle={styles.handleIndicator}
       >
         <LinearGradient
-          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradientBackground}
@@ -1021,11 +1148,14 @@ export default function CharacterDetailsScreen() {
               <Text style={styles.bottomSheetHeaderText}>
                 {character ? `${character.name}'s Defense` : 'Defense'}
               </Text>
-              <TouchableOpacity onPress={closeDefenseBottomSheet} style={styles.closeButton}>
+              <TouchableOpacity
+                onPress={closeDefenseBottomSheet}
+                style={styles.closeButton}
+              >
                 <Text style={styles.closeButtonText}>✕</Text>
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.maxHealthContainer}>
               <Text style={styles.maxHealthLabel}>Current Defense:</Text>
               <View style={styles.maxHealthControls}>
@@ -1034,11 +1164,7 @@ export default function CharacterDetailsScreen() {
                   style={styles.maxHealthButton}
                   activeOpacity={0.7}
                 >
-                  <IconSymbol
-                    name="minus"
-                    size={24}
-                    color={Colors.dark.text}
-                  />
+                  <IconSymbol name="minus" size={24} color={Colors.dark.text} />
                 </TouchableOpacity>
                 <Text style={styles.maxHealthValue}>
                   {character ? character.defense : '+0'}
@@ -1048,11 +1174,7 @@ export default function CharacterDetailsScreen() {
                   style={styles.maxHealthButton}
                   activeOpacity={0.7}
                 >
-                  <IconSymbol
-                    name="plus"
-                    size={24}
-                    color={Colors.dark.text}
-                  />
+                  <IconSymbol name="plus" size={24} color={Colors.dark.text} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -1072,32 +1194,45 @@ export default function CharacterDetailsScreen() {
         handleIndicatorStyle={styles.handleIndicator}
       >
         <LinearGradient
-          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradientBackground}
         >
           <View style={styles.bottomSheetHeader}>
             <Text style={styles.bottomSheetHeaderText}>Select Class</Text>
-            <TouchableOpacity onPress={closeClassBottomSheet} style={styles.closeButton}>
+            <TouchableOpacity
+              onPress={closeClassBottomSheet}
+              style={styles.closeButton}
+            >
               <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
           </View>
-          
-          <BottomSheetScrollView 
+
+          <BottomSheetScrollView
             contentContainerStyle={styles.positionOptionsContent}
             showsVerticalScrollIndicator={false}
           >
-            {classes.map((classType) => {
+            {classes.map(classType => {
               const isSelected = character?.class.name === classType.name;
               return (
                 <TouchableOpacity
                   key={classType.name}
-                  style={[styles.positionOption, isSelected && styles.positionOptionSelected]}
+                  style={[
+                    styles.positionOption,
+                    isSelected && styles.positionOptionSelected,
+                  ]}
                   onPress={() => handleClassSelect(classType)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.positionOptionText, isSelected && styles.positionOptionTextSelected]}>
+                  <Text
+                    style={[
+                      styles.positionOptionText,
+                      isSelected && styles.positionOptionTextSelected,
+                    ]}
+                  >
                     {classType.name}
                   </Text>
                 </TouchableOpacity>
@@ -1107,6 +1242,64 @@ export default function CharacterDetailsScreen() {
         </LinearGradient>
       </BottomSheet>
 
+      {/* Delete Confirmation Bottom Sheet */}
+      <BottomSheet
+        ref={deleteConfirmationBottomSheetRef}
+        index={-1}
+        snapPoints={deleteConfirmationSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderDeleteConfirmationBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>Delete Character</Text>
+              <TouchableOpacity
+                onPress={closeDeleteConfirmation}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.deleteConfirmationContainer}>
+              <Text style={styles.deleteConfirmationText}>
+                Are you sure you want to delete{' '}
+                <Text style={styles.deleteConfirmationCharacterName}>
+                  {character?.name}
+                </Text>
+                ? This action cannot be undone.
+              </Text>
+
+              <View style={styles.deleteConfirmationButtons}>
+                <TouchableOpacity
+                  onPress={closeDeleteConfirmation}
+                  style={styles.deleteCancelButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleDeleteCharacter}
+                  style={styles.deleteConfirmButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteConfirmButtonText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
     </LinearGradient>
   );
 }
@@ -1148,12 +1341,12 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 20,
     paddingTop: 24,
-    paddingBottom: 40,
+    paddingBottom: 100,
   },
   scrollContentTablet: {
     paddingHorizontal: 40,
     paddingTop: 32,
-    paddingBottom: 48,
+    paddingBottom: 120,
   },
   contentWrapper: {
     width: '100%',
@@ -1331,7 +1524,7 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 8,
     justifyContent: 'space-between',
-    paddingRight: 16
+    paddingRight: 16,
   },
   counterRowTablet: {
     flex: 1,
@@ -1350,9 +1543,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   smallCounterButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: Colors.dark.accent,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1486,5 +1679,92 @@ const styles = StyleSheet.create({
     minWidth: 80,
     textAlign: 'center',
   },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.dark.border,
+    backgroundColor: Colors.dark.backgroundPrimary,
+  },
+  footerTablet: {
+    paddingHorizontal: 40,
+    paddingBottom: 30,
+    paddingTop: 20,
+  },
+  deleteButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 56,
+    borderRadius: 14,
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+    maxWidth: 700,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  deleteButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#ef4444',
+    letterSpacing: 0.5,
+  },
+  deleteConfirmationContainer: {
+    paddingHorizontal: 24,
+    gap: 24,
+  },
+  deleteConfirmationText: {
+    fontSize: 16,
+    color: Colors.dark.textSecondary,
+    lineHeight: 24,
+    textAlign: 'center',
+  },
+  deleteConfirmationCharacterName: {
+    fontWeight: '700',
+    color: Colors.dark.text,
+  },
+  deleteConfirmationButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'center',
+  },
+  deleteCancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.dark.backgroundTertiary,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteCancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.dark.text,
+  },
+  deleteConfirmButton: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteConfirmButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ef4444',
+  },
 });
-

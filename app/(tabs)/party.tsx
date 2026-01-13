@@ -1,8 +1,18 @@
-import { View, StyleSheet, TouchableOpacity, Text, ScrollView } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  ScrollView,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useState, useCallback, useRef, useMemo } from 'react';
-import BottomSheet, { BottomSheetBackdrop, BottomSheetView, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, {
+  BottomSheetBackdrop,
+  BottomSheetView,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
@@ -18,16 +28,15 @@ export default function PartyScreen() {
   const colors = Colors.dark;
   const { isTablet } = useResponsive();
   const [characters, setCharacters] = useState<Character[]>([]);
-  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
-  
+  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(
+    null
+  );
+
   const maxHealthBottomSheetRef = useRef<BottomSheet>(null);
   const maxHealthSnapPoints = useMemo(() => ['40%'], []);
-  
+
   const positionBottomSheetRef = useRef<BottomSheet>(null);
   const positionSnapPoints = useMemo(() => ['50%'], []);
-  
-  const deleteConfirmationBottomSheetRef = useRef<BottomSheet>(null);
-  const deleteConfirmationSnapPoints = useMemo(() => ['30%'], []);
 
   const loadCharacters = useCallback(async () => {
     try {
@@ -54,122 +63,121 @@ export default function PartyScreen() {
     router.push('/CreateCharacter');
   };
 
-  const openDeleteConfirmation = useCallback((characterToDelete: Character) => {
-    setSelectedCharacter(characterToDelete);
-    deleteConfirmationBottomSheetRef.current?.snapToIndex(0);
-  }, []);
+  const handleUpdateCharacter = useCallback(
+    async (updatedCharacter: Character) => {
+      try {
+        const charactersJson = await AsyncStorage.getItem('characters');
+        if (charactersJson) {
+          const charactersArray: Character[] = JSON.parse(charactersJson);
+          const updatedCharacters = charactersArray.map(char =>
+            char.id === updatedCharacter.id ? updatedCharacter : char
+          );
 
-  const closeDeleteConfirmation = useCallback(() => {
-    deleteConfirmationBottomSheetRef.current?.close();
-    setSelectedCharacter(null);
-  }, []);
-
-  const handleDeleteCharacter = useCallback(async () => {
-    if (!selectedCharacter) return;
-    
-    try {
-      const charactersJson = await AsyncStorage.getItem('characters');
-      if (charactersJson) {
-        const charactersArray: Character[] = JSON.parse(charactersJson);
-        // Remove the character that matches the one to delete
-        const updatedCharacters = charactersArray.filter(
-          (char) => char.id !== selectedCharacter.id
-        );
-        
-        // Save updated array back to AsyncStorage
-        await AsyncStorage.setItem('characters', JSON.stringify(updatedCharacters));
-        
-        // Update local state
-        setCharacters(updatedCharacters);
+          await AsyncStorage.setItem(
+            'characters',
+            JSON.stringify(updatedCharacters)
+          );
+          setCharacters(updatedCharacters);
+        }
+      } catch (error) {
+        console.error('Error updating character:', error);
       }
-      closeDeleteConfirmation();
-    } catch (error) {
-      console.error('Error deleting character:', error);
-    }
-  }, [selectedCharacter, closeDeleteConfirmation]);
+    },
+    []
+  );
 
-  const handleUpdateCharacter = useCallback(async (updatedCharacter: Character) => {
-    try {
-      const charactersJson = await AsyncStorage.getItem('characters');
-      if (charactersJson) {
-        const charactersArray: Character[] = JSON.parse(charactersJson);
-        const updatedCharacters = charactersArray.map((char) =>
-          char.id === updatedCharacter.id ? updatedCharacter : char
-        );
-        
-        await AsyncStorage.setItem('characters', JSON.stringify(updatedCharacters));
-        setCharacters(updatedCharacters);
-      }
-    } catch (error) {
-      console.error('Error updating character:', error);
-    }
-  }, []);
+  const handleIncrementHealth = useCallback(
+    (character: Character) => {
+      const updated = {
+        ...character,
+        currentHealth: Math.min(
+          character.maxHealth,
+          character.currentHealth + 1
+        ),
+      };
+      handleUpdateCharacter(updated);
+    },
+    [handleUpdateCharacter]
+  );
 
-  const handleIncrementHealth = useCallback((character: Character) => {
-    const updated = {
-      ...character,
-      currentHealth: Math.min(character.maxHealth, character.currentHealth + 1)
-    };
-    handleUpdateCharacter(updated);
-  }, [handleUpdateCharacter]);
+  const handleDecrementHealth = useCallback(
+    (character: Character) => {
+      const updated = {
+        ...character,
+        currentHealth: Math.max(0, character.currentHealth - 1),
+      };
+      handleUpdateCharacter(updated);
+    },
+    [handleUpdateCharacter]
+  );
 
-  const handleDecrementHealth = useCallback((character: Character) => {
-    const updated = {
-      ...character,
-      currentHealth: Math.max(0, character.currentHealth - 1)
-    };
-    handleUpdateCharacter(updated);
-  }, [handleUpdateCharacter]);
+  const handleIncrementSurges = useCallback(
+    (character: Character) => {
+      if (character.surges === null || character.surges >= 5) return;
+      const updated = {
+        ...character,
+        surges: character.surges + 1,
+      };
+      handleUpdateCharacter(updated);
+    },
+    [handleUpdateCharacter]
+  );
 
-  const handleIncrementSurges = useCallback((character: Character) => {
-    if (character.surges === null || character.surges >= 5) return;
-    const updated = {
-      ...character,
-      surges: character.surges + 1
-    };
-    handleUpdateCharacter(updated);
-  }, [handleUpdateCharacter]);
+  const handleDecrementSurges = useCallback(
+    (character: Character) => {
+      if (character.surges === null) return;
+      const updated = {
+        ...character,
+        surges: Math.max(0, character.surges - 1),
+      };
+      handleUpdateCharacter(updated);
+    },
+    [handleUpdateCharacter]
+  );
 
-  const handleDecrementSurges = useCallback((character: Character) => {
-    if (character.surges === null) return;
-    const updated = {
-      ...character,
-      surges: Math.max(0, character.surges - 1)
-    };
-    handleUpdateCharacter(updated);
-  }, [handleUpdateCharacter]);
+  const handleIncrementGlowstone = useCallback(
+    (character: Character) => {
+      const updated = {
+        ...character,
+        glowstone: character.glowstone + 1,
+      };
+      handleUpdateCharacter(updated);
+    },
+    [handleUpdateCharacter]
+  );
 
-  const handleIncrementGlowstone = useCallback((character: Character) => {
-    const updated = {
-      ...character,
-      glowstone: character.glowstone + 1
-    };
-    handleUpdateCharacter(updated);
-  }, [handleUpdateCharacter]);
+  const handleDecrementGlowstone = useCallback(
+    (character: Character) => {
+      const updated = {
+        ...character,
+        glowstone: Math.max(0, character.glowstone - 1),
+      };
+      handleUpdateCharacter(updated);
+    },
+    [handleUpdateCharacter]
+  );
 
-  const handleDecrementGlowstone = useCallback((character: Character) => {
-    const updated = {
-      ...character,
-      glowstone: Math.max(0, character.glowstone - 1)
-    };
-    handleUpdateCharacter(updated);
-  }, [handleUpdateCharacter]);
+  const handleIncrementEssence = useCallback(
+    (character: Character) => {
+      const updated = {
+        ...character,
+        essence: character.essence + 1,
+      };
+      handleUpdateCharacter(updated);
+    },
+    [handleUpdateCharacter]
+  );
 
-  const handleIncrementEssence = useCallback((character: Character) => {
-    const updated = {
-      ...character,
-      essence: character.essence + 1
-    };
-    handleUpdateCharacter(updated);
-  }, [handleUpdateCharacter]);
-
-  const handleDecrementEssence = useCallback((character: Character) => {
-    const updated = {
-      ...character,
-      essence: Math.max(0, character.essence - 1)
-    };
-    handleUpdateCharacter(updated);
-  }, [handleUpdateCharacter]);
+  const handleDecrementEssence = useCallback(
+    (character: Character) => {
+      const updated = {
+        ...character,
+        essence: Math.max(0, character.essence - 1),
+      };
+      handleUpdateCharacter(updated);
+    },
+    [handleUpdateCharacter]
+  );
 
   const openMaxHealthBottomSheet = useCallback((character: Character) => {
     setSelectedCharacter(character);
@@ -187,7 +195,10 @@ export default function PartyScreen() {
       ...selectedCharacter,
       maxHealth: selectedCharacter.maxHealth + 1,
       // Ensure currentHealth doesn't exceed new maxHealth
-      currentHealth: Math.min(selectedCharacter.currentHealth, selectedCharacter.maxHealth + 1)
+      currentHealth: Math.min(
+        selectedCharacter.currentHealth,
+        selectedCharacter.maxHealth + 1
+      ),
     };
     handleUpdateCharacter(updated);
     setSelectedCharacter(updated);
@@ -199,7 +210,10 @@ export default function PartyScreen() {
       ...selectedCharacter,
       maxHealth: Math.max(1, selectedCharacter.maxHealth - 1),
       // Ensure currentHealth doesn't exceed new maxHealth
-      currentHealth: Math.min(selectedCharacter.currentHealth, selectedCharacter.maxHealth - 1)
+      currentHealth: Math.min(
+        selectedCharacter.currentHealth,
+        selectedCharacter.maxHealth - 1
+      ),
     };
     handleUpdateCharacter(updated);
     setSelectedCharacter(updated);
@@ -227,37 +241,46 @@ export default function PartyScreen() {
     setSelectedCharacter(null);
   }, []);
 
-  const handlePositionSelect = useCallback(async (selectedPosition: 1 | 2 | 3 | 4 | null) => {
-    if (!selectedCharacter) return;
+  const handlePositionSelect = useCallback(
+    async (selectedPosition: 1 | 2 | 3 | 4 | null) => {
+      if (!selectedCharacter) return;
 
-    try {
-      const charactersJson = await AsyncStorage.getItem('characters');
-      if (!charactersJson) return;
+      try {
+        const charactersJson = await AsyncStorage.getItem('characters');
+        if (!charactersJson) return;
 
-      const charactersArray: Character[] = JSON.parse(charactersJson);
-      
-      // If selecting a position (1-4), clear all other characters with that position
-      if (selectedPosition !== null) {
-        charactersArray.forEach((char) => {
-          if (char.position === selectedPosition && char.id !== selectedCharacter.id) {
-            char.position = null;
-          }
-        });
+        const charactersArray: Character[] = JSON.parse(charactersJson);
+
+        // If selecting a position (1-4), clear all other characters with that position
+        if (selectedPosition !== null) {
+          charactersArray.forEach(char => {
+            if (
+              char.position === selectedPosition &&
+              char.id !== selectedCharacter.id
+            ) {
+              char.position = null;
+            }
+          });
+        }
+
+        // Update the current character's position
+        const updatedCharacter = {
+          ...selectedCharacter,
+          position: selectedPosition,
+        };
+        const updatedArray = charactersArray.map(char =>
+          char.id === selectedCharacter.id ? updatedCharacter : char
+        );
+
+        await AsyncStorage.setItem('characters', JSON.stringify(updatedArray));
+        setCharacters(updatedArray);
+        closePositionBottomSheet();
+      } catch (error) {
+        console.error('Error updating position:', error);
       }
-
-      // Update the current character's position
-      const updatedCharacter = { ...selectedCharacter, position: selectedPosition };
-      const updatedArray = charactersArray.map((char) =>
-        char.id === selectedCharacter.id ? updatedCharacter : char
-      );
-
-      await AsyncStorage.setItem('characters', JSON.stringify(updatedArray));
-      setCharacters(updatedArray);
-      closePositionBottomSheet();
-    } catch (error) {
-      console.error('Error updating position:', error);
-    }
-  }, [selectedCharacter, closePositionBottomSheet]);
+    },
+    [selectedCharacter, closePositionBottomSheet]
+  );
 
   const renderPositionBackdrop = useCallback(
     (props: any) => (
@@ -271,18 +294,6 @@ export default function PartyScreen() {
     [closePositionBottomSheet]
   );
 
-  const renderDeleteConfirmationBackdrop = useCallback(
-    (props: any) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        onPress={closeDeleteConfirmation}
-      />
-    ),
-    [closeDeleteConfirmation]
-  );
-
   return (
     <LinearGradient
       colors={colors.backgroundGradient as [string, string, ...string[]]}
@@ -290,17 +301,19 @@ export default function PartyScreen() {
       end={{ x: 1, y: 1 }}
       style={styles.container}
     >
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          isTablet && styles.scrollContentTablet
+          isTablet && styles.scrollContentTablet,
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[
-          styles.contentWrapper,
-          isTablet && styles.contentWrapperTablet
-        ]}>
+        <View
+          style={[
+            styles.contentWrapper,
+            isTablet && styles.contentWrapperTablet,
+          ]}
+        >
           <View style={styles.header}>
             <RegionSelector />
             <RollSelector />
@@ -315,237 +328,230 @@ export default function PartyScreen() {
                 </Text>
               </View>
             ) : (
-              <View style={[
-                styles.charactersContainer,
-                isTablet && styles.charactersContainerTablet
-              ]}>
-                {[...characters].sort((a, b) => {
-                  // Characters with null position go last
-                  if (a.position === null && b.position === null) return 0;
-                  if (a.position === null) return 1;
-                  if (b.position === null) return -1;
-                  // Sort by position number (lowest first)
-                  return a.position - b.position;
-                }).map((character, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={[
-                      styles.characterCard,
-                      isTablet && styles.characterCardTablet
-                    ]}
-                    onPress={() => router.push({
-                      pathname: '/CharacterDetails',
-                      params: { id: character.id.toString() }
-                    })}
-                    activeOpacity={0.8}
-                  >
-                    <View style={styles.characterCardHeader}>
-                      <Text style={styles.characterName}>{character.name}</Text>
-                      <TouchableOpacity
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          openDeleteConfirmation(character);
-                        }}
-                        style={styles.deleteButton}
-                        activeOpacity={0.7}
-                      >
-                        <IconSymbol
-                          name="trash"
-                          size={20}
-                          color={Colors.dark.textSecondary}
-                        />
-                      </TouchableOpacity>
-                    </View>
-                    <View style={styles.characterDetails}>
-                      <View style={styles.characterDetailRow}>
-                        <Text style={styles.characterValueBold}>{character.race.name} {character.class.name }</Text>
-                      </View>
-
-                      <TouchableOpacity
-                        style={styles.characterDetailRow}
-                        onPress={() => openPositionBottomSheet(character)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.characterLabel}>Position: </Text>
-                        <Text style={styles.characterValue}>
-                          {character.position !== null ? character.position : 'N/A'}
+              <View
+                style={[
+                  styles.charactersContainer,
+                  isTablet && styles.charactersContainerTablet,
+                ]}
+              >
+                {[...characters]
+                  .sort((a, b) => {
+                    // Characters with null position go last
+                    if (a.position === null && b.position === null) return 0;
+                    if (a.position === null) return 1;
+                    if (b.position === null) return -1;
+                    // Sort by position number (lowest first)
+                    return a.position - b.position;
+                  })
+                  .map((character, index) => (
+                    <View
+                      key={index}
+                      style={[
+                        styles.characterCard,
+                        isTablet && styles.characterCardTablet,
+                      ]}
+                    >
+                      <View style={styles.characterCardHeader}>
+                        <Text style={styles.characterName}>
+                          {character.name}
                         </Text>
-                      </TouchableOpacity>
-
-                      <View style={styles.counterSection}>
-                        <View style={styles.counterRow}>
-                          <TouchableOpacity
-                            onLongPress={() => openMaxHealthBottomSheet(character)}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={styles.counterLabel}>Health: </Text>
-                          </TouchableOpacity>
-                          <View style={styles.counterControls}>
-                            <TouchableOpacity
-                              onPress={(e) => {
-                                e.stopPropagation();
-                                handleDecrementHealth(character);
-                              }}
-                              style={styles.smallCounterButton}
-                              activeOpacity={0.7}
-                            >
-                              <IconSymbol
-                                name="minus"
-                                size={14}
-                                color={Colors.dark.text}
-                              />
-                            </TouchableOpacity>
-                            <Text style={styles.counterValue}>
-                              {character.currentHealth} / {character.maxHealth}
-                            </Text>
-                            <TouchableOpacity
-                              onPress={(e) => {
-                                e.stopPropagation();
-                                handleIncrementHealth(character);
-                              }}
-                              style={styles.smallCounterButton}
-                              activeOpacity={0.7}
-                            >
-                              <IconSymbol
-                                name="plus"
-                                size={14}
-                                color={Colors.dark.text}
-                              />
-                            </TouchableOpacity>
-                          </View>
+                        <TouchableOpacity
+                          onPress={() =>
+                            router.push({
+                              pathname: '/CharacterDetails',
+                              params: { id: character.id.toString() },
+                            })
+                          }
+                          style={styles.infoButton}
+                          activeOpacity={0.7}
+                        >
+                          <IconSymbol
+                            name="info.circle"
+                            size={20}
+                            color={Colors.dark.textSecondary}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                      <View style={styles.characterDetails}>
+                        <View style={styles.characterDetailRow}>
+                          <Text style={styles.characterValueBold}>
+                            {character.race.name} {character.class.name}
+                          </Text>
                         </View>
 
-                        <View style={styles.counterRow}>
-                          <Text style={styles.counterLabel}>Surges: </Text>
-                          <View style={styles.counterControls}>
-                            <TouchableOpacity
-                              onPress={(e) => {
-                                e.stopPropagation();
-                                handleDecrementSurges(character);
-                              }}
-                              style={styles.smallCounterButton}
-                              activeOpacity={0.7}
-                            >
-                              <IconSymbol
-                                name="minus"
-                                size={14}
-                                color={Colors.dark.text}
-                              />
-                            </TouchableOpacity>
-                            <Text style={styles.counterValue}>
-                              {character.surges !== null ? character.surges : 'N/A'}
-                            </Text>
-                            <TouchableOpacity
-                              onPress={(e) => {
-                                e.stopPropagation();
-                                handleIncrementSurges(character);
-                              }}
-                              style={styles.smallCounterButton}
-                              activeOpacity={0.7}
-                            >
-                              <IconSymbol
-                                name="plus"
-                                size={14}
-                                color={Colors.dark.text}
-                              />
-                            </TouchableOpacity>
-                          </View>
-                        </View>
+                        <TouchableOpacity
+                          style={styles.characterDetailRow}
+                          onPress={() => openPositionBottomSheet(character)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.characterLabel}>Position: </Text>
+                          <Text style={styles.characterValue}>
+                            {character.position !== null
+                              ? character.position
+                              : 'N/A'}
+                          </Text>
+                        </TouchableOpacity>
 
-                        <View style={styles.counterRow}>
-                          <Text style={styles.counterLabel}>Glowstone: </Text>
-                          <View style={styles.counterControls}>
+                        <View style={styles.counterSection}>
+                          <View style={styles.counterRow}>
                             <TouchableOpacity
-                              onPress={(e) => {
-                                e.stopPropagation();
-                                handleDecrementGlowstone(character);
-                              }}
-                              style={styles.smallCounterButton}
+                              onLongPress={() =>
+                                openMaxHealthBottomSheet(character)
+                              }
                               activeOpacity={0.7}
                             >
-                              <IconSymbol
-                                name="minus"
-                                size={14}
-                                color={Colors.dark.text}
-                              />
+                              <Text style={styles.counterLabel}>Health: </Text>
                             </TouchableOpacity>
-                            <Text style={styles.counterValue}>
-                              {character.glowstone}
-                            </Text>
-                            <TouchableOpacity
-                              onPress={(e) => {
-                                e.stopPropagation();
-                                handleIncrementGlowstone(character);
-                              }}
-                              style={styles.smallCounterButton}
-                              activeOpacity={0.7}
-                            >
-                              <IconSymbol
-                                name="plus"
-                                size={14}
-                                color={Colors.dark.text}
-                              />
-                            </TouchableOpacity>
+                            <View style={styles.counterControls}>
+                              <TouchableOpacity
+                                onPress={() => handleDecrementHealth(character)}
+                                style={styles.smallCounterButton}
+                                activeOpacity={0.7}
+                              >
+                                <IconSymbol
+                                  name="minus"
+                                  size={17}
+                                  color={Colors.dark.text}
+                                />
+                              </TouchableOpacity>
+                              <Text style={styles.counterValue}>
+                                {character.currentHealth} /{' '}
+                                {character.maxHealth}
+                              </Text>
+                              <TouchableOpacity
+                                onPress={() => handleIncrementHealth(character)}
+                                style={styles.smallCounterButton}
+                                activeOpacity={0.7}
+                              >
+                                <IconSymbol
+                                  name="plus"
+                                  size={17}
+                                  color={Colors.dark.text}
+                                />
+                              </TouchableOpacity>
+                            </View>
                           </View>
-                        </View>
 
-                        <View style={styles.counterRow}>
-                          <Text style={styles.counterLabel}>Essence: </Text>
-                          <View style={styles.counterControls}>
-                            <TouchableOpacity
-                              onPress={(e) => {
-                                e.stopPropagation();
-                                handleDecrementEssence(character);
-                              }}
-                              style={styles.smallCounterButton}
-                              activeOpacity={0.7}
-                            >
-                              <IconSymbol
-                                name="minus"
-                                size={14}
-                                color={Colors.dark.text}
-                              />
-                            </TouchableOpacity>
-                            <Text style={styles.counterValue}>
-                              {character.essence}
-                            </Text>
-                            <TouchableOpacity
-                              onPress={(e) => {
-                                e.stopPropagation();
-                                handleIncrementEssence(character);
-                              }}
-                              style={styles.smallCounterButton}
-                              activeOpacity={0.7}
-                            >
-                              <IconSymbol
-                                name="plus"
-                                size={14}
-                                color={Colors.dark.text}
-                              />
-                            </TouchableOpacity>
+                          <View style={styles.counterRow}>
+                            <Text style={styles.counterLabel}>Surges: </Text>
+                            <View style={styles.counterControls}>
+                              <TouchableOpacity
+                                onPress={() => handleDecrementSurges(character)}
+                                style={styles.smallCounterButton}
+                                activeOpacity={0.7}
+                              >
+                                <IconSymbol
+                                  name="minus"
+                                  size={17}
+                                  color={Colors.dark.text}
+                                />
+                              </TouchableOpacity>
+                              <Text style={styles.counterValue}>
+                                {character.surges !== null
+                                  ? character.surges
+                                  : 'N/A'}
+                              </Text>
+                              <TouchableOpacity
+                                onPress={() => handleIncrementSurges(character)}
+                                style={styles.smallCounterButton}
+                                activeOpacity={0.7}
+                              >
+                                <IconSymbol
+                                  name="plus"
+                                  size={17}
+                                  color={Colors.dark.text}
+                                />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+
+                          <View style={styles.counterRow}>
+                            <Text style={styles.counterLabel}>Glowstone: </Text>
+                            <View style={styles.counterControls}>
+                              <TouchableOpacity
+                                onPress={() =>
+                                  handleDecrementGlowstone(character)
+                                }
+                                style={styles.smallCounterButton}
+                                activeOpacity={0.7}
+                              >
+                                <IconSymbol
+                                  name="minus"
+                                  size={17}
+                                  color={Colors.dark.text}
+                                />
+                              </TouchableOpacity>
+                              <Text style={styles.counterValue}>
+                                {character.glowstone}
+                              </Text>
+                              <TouchableOpacity
+                                onPress={() =>
+                                  handleIncrementGlowstone(character)
+                                }
+                                style={styles.smallCounterButton}
+                                activeOpacity={0.7}
+                              >
+                                <IconSymbol
+                                  name="plus"
+                                  size={17}
+                                  color={Colors.dark.text}
+                                />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+
+                          <View style={styles.counterRow}>
+                            <Text style={styles.counterLabel}>Essence: </Text>
+                            <View style={styles.counterControls}>
+                              <TouchableOpacity
+                                onPress={() =>
+                                  handleDecrementEssence(character)
+                                }
+                                style={styles.smallCounterButton}
+                                activeOpacity={0.7}
+                              >
+                                <IconSymbol
+                                  name="minus"
+                                  size={17}
+                                  color={Colors.dark.text}
+                                />
+                              </TouchableOpacity>
+                              <Text style={styles.counterValue}>
+                                {character.essence}
+                              </Text>
+                              <TouchableOpacity
+                                onPress={() =>
+                                  handleIncrementEssence(character)
+                                }
+                                style={styles.smallCounterButton}
+                                activeOpacity={0.7}
+                              >
+                                <IconSymbol
+                                  name="plus"
+                                  size={17}
+                                  color={Colors.dark.text}
+                                />
+                              </TouchableOpacity>
+                            </View>
                           </View>
                         </View>
                       </View>
                     </View>
-                  </TouchableOpacity>
-                ))}
+                  ))}
               </View>
             )}
           </View>
         </View>
       </ScrollView>
 
-      <View style={[
-        styles.footer,
-        isTablet && styles.footerTablet
-      ]}>
+      <View style={[styles.footer, isTablet && styles.footerTablet]}>
         <LinearGradient
           colors={colors.accentGradient as [string, string, ...string[]]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.buttonGradient}
         >
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.createButton}
             onPress={handleCreateCharacter}
             activeOpacity={0.9}
@@ -565,7 +571,9 @@ export default function PartyScreen() {
         handleIndicatorStyle={styles.handleIndicator}
       >
         <LinearGradient
-          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradientBackground}
@@ -573,13 +581,18 @@ export default function PartyScreen() {
           <BottomSheetView style={styles.bottomSheetContent}>
             <View style={styles.bottomSheetHeader}>
               <Text style={styles.bottomSheetHeaderText}>
-                {selectedCharacter ? `${selectedCharacter.name}'s Max Health` : 'Max Health'}
+                {selectedCharacter
+                  ? `${selectedCharacter.name}'s Max Health`
+                  : 'Max Health'}
               </Text>
-              <TouchableOpacity onPress={closeMaxHealthBottomSheet} style={styles.closeButton}>
+              <TouchableOpacity
+                onPress={closeMaxHealthBottomSheet}
+                style={styles.closeButton}
+              >
                 <Text style={styles.closeButtonText}>✕</Text>
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.maxHealthContainer}>
               <Text style={styles.maxHealthLabel}>Current Max Health:</Text>
               <View style={styles.maxHealthControls}>
@@ -588,11 +601,7 @@ export default function PartyScreen() {
                   style={styles.maxHealthButton}
                   activeOpacity={0.7}
                 >
-                  <IconSymbol
-                    name="minus"
-                    size={24}
-                    color={Colors.dark.text}
-                  />
+                  <IconSymbol name="minus" size={24} color={Colors.dark.text} />
                 </TouchableOpacity>
                 <Text style={styles.maxHealthValue}>
                   {selectedCharacter?.maxHealth ?? 0}
@@ -602,11 +611,7 @@ export default function PartyScreen() {
                   style={styles.maxHealthButton}
                   activeOpacity={0.7}
                 >
-                  <IconSymbol
-                    name="plus"
-                    size={24}
-                    color={Colors.dark.text}
-                  />
+                  <IconSymbol name="plus" size={24} color={Colors.dark.text} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -626,89 +631,53 @@ export default function PartyScreen() {
         handleIndicatorStyle={styles.handleIndicator}
       >
         <LinearGradient
-          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradientBackground}
         >
           <View style={styles.bottomSheetHeader}>
             <Text style={styles.bottomSheetHeaderText}>Select Position</Text>
-            <TouchableOpacity onPress={closePositionBottomSheet} style={styles.closeButton}>
+            <TouchableOpacity
+              onPress={closePositionBottomSheet}
+              style={styles.closeButton}
+            >
               <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
           </View>
-          
-          <BottomSheetScrollView 
+
+          <BottomSheetScrollView
             contentContainerStyle={styles.positionOptionsContent}
             showsVerticalScrollIndicator={false}
           >
-            {([1, 2, 3, 4, null] as const).map((position) => {
+            {([1, 2, 3, 4, null] as const).map(position => {
               const isSelected = selectedCharacter?.position === position;
-              const displayText = position !== null ? position.toString() : 'None';
+              const displayText =
+                position !== null ? position.toString() : 'None';
               return (
                 <TouchableOpacity
                   key={position !== null ? position : 'none'}
-                  style={[styles.positionOption, isSelected && styles.positionOptionSelected]}
+                  style={[
+                    styles.positionOption,
+                    isSelected && styles.positionOptionSelected,
+                  ]}
                   onPress={() => handlePositionSelect(position)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.positionOptionText, isSelected && styles.positionOptionTextSelected]}>
+                  <Text
+                    style={[
+                      styles.positionOptionText,
+                      isSelected && styles.positionOptionTextSelected,
+                    ]}
+                  >
                     {displayText}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </BottomSheetScrollView>
-        </LinearGradient>
-      </BottomSheet>
-
-      {/* Delete Confirmation Bottom Sheet */}
-      <BottomSheet
-        ref={deleteConfirmationBottomSheetRef}
-        index={-1}
-        snapPoints={deleteConfirmationSnapPoints}
-        enablePanDownToClose
-        backdropComponent={renderDeleteConfirmationBackdrop}
-        backgroundStyle={styles.bottomSheetBackground}
-        handleIndicatorStyle={styles.handleIndicator}
-      >
-        <LinearGradient
-          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.gradientBackground}
-        >
-          <BottomSheetView style={styles.bottomSheetContent}>
-            <View style={styles.bottomSheetHeader}>
-              <Text style={styles.bottomSheetHeaderText}>Delete Character</Text>
-              <TouchableOpacity onPress={closeDeleteConfirmation} style={styles.closeButton}>
-                <Text style={styles.closeButtonText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.deleteConfirmationContainer}>
-              <Text style={styles.deleteConfirmationText}>
-                Are you sure you want to delete <Text style={styles.deleteConfirmationCharacterName}>{selectedCharacter?.name}</Text>? This action cannot be undone.
-              </Text>
-              
-              <View style={styles.deleteConfirmationButtons}>
-                <TouchableOpacity
-                  onPress={closeDeleteConfirmation}
-                  style={styles.deleteCancelButton}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.deleteCancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={handleDeleteCharacter}
-                  style={styles.deleteConfirmButton}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.deleteConfirmButtonText}>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </BottomSheetView>
         </LinearGradient>
       </BottomSheet>
     </LinearGradient>
@@ -841,10 +810,10 @@ const styles = StyleSheet.create({
     color: Colors.dark.text,
     flex: 1,
   },
-  deleteButton: {
+  infoButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   characterDetails: {
     gap: 12,
@@ -871,7 +840,7 @@ const styles = StyleSheet.create({
   },
   counterSection: {
     marginTop: 12,
-    gap: 8,
+    gap: 12,
   },
   counterRow: {
     flexDirection: 'row',
@@ -887,12 +856,12 @@ const styles = StyleSheet.create({
   counterControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
   },
   smallCounterButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: Colors.dark.accent,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1007,56 +976,4 @@ const styles = StyleSheet.create({
     color: Colors.dark.text,
     fontWeight: '600',
   },
-  deleteConfirmationContainer: {
-    paddingHorizontal: 24,
-    gap: 24,
-  },
-  deleteConfirmationText: {
-    fontSize: 16,
-    color: Colors.dark.textSecondary,
-    lineHeight: 24,
-    textAlign: 'center',
-  },
-  deleteConfirmationCharacterName: {
-    fontWeight: '700',
-    color: Colors.dark.text,
-  },
-  deleteConfirmationButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    justifyContent: 'center',
-  },
-  deleteCancelButton: {
-    flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    backgroundColor: Colors.dark.backgroundTertiary,
-    borderWidth: 1,
-    borderColor: Colors.dark.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  deleteCancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.dark.text,
-  },
-  deleteConfirmButton: {
-    flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
-    borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  deleteConfirmButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#ef4444',
-  },
 });
-
