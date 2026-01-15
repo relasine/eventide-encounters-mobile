@@ -25,6 +25,7 @@ const MAPPING = {
   'trash': 'delete',
   'plus': 'add',
   'minus': 'remove',
+  'xmark': 'close',
 } as IconMapping;
 
 /**

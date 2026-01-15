@@ -1,8 +1,20 @@
-import { View, StyleSheet, TouchableOpacity, Text, ScrollView, TextInput, ActivityIndicator, Dimensions } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  ScrollView,
+  TextInput,
+  ActivityIndicator,
+  Dimensions,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, {
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/theme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -47,23 +59,27 @@ export default function CreateCharacterScreen() {
           fetch(`${API_URL}/api/v1/races`, {
             headers: {
               'x-api-key': API_KEY,
-              'Content-Type': 'application/json'
-            }
+              'Content-Type': 'application/json',
+            },
           }),
           fetch(`${API_URL}/api/v1/classes`, {
             headers: {
               'x-api-key': API_KEY,
-              'Content-Type': 'application/json'
-            }
-          })
+              'Content-Type': 'application/json',
+            },
+          }),
         ]);
 
         if (!racesResponse.ok) {
-          throw new Error(`Failed to fetch races: ${racesResponse.status} ${racesResponse.statusText}`);
+          throw new Error(
+            `Failed to fetch races: ${racesResponse.status} ${racesResponse.statusText}`
+          );
         }
 
         if (!classesResponse.ok) {
-          throw new Error(`Failed to fetch classes: ${classesResponse.status} ${classesResponse.statusText}`);
+          throw new Error(
+            `Failed to fetch classes: ${classesResponse.status} ${classesResponse.statusText}`
+          );
         }
 
         const racesData = await racesResponse.json();
@@ -80,7 +96,10 @@ export default function CreateCharacterScreen() {
         setRaces(racesData.races);
         setClasses(classesData.classes);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'An unexpected error occurred';
         setError(errorMessage);
         console.error('Error fetching character data:', error);
       } finally {
@@ -148,7 +167,7 @@ export default function CreateCharacterScreen() {
 
     // Find the matching class in the classes array
     const matchingClass = classes.find(c => c.name === selectedClass.name);
-    
+
     if (!matchingClass) {
       setError('Selected class not found in classes array');
       return;
@@ -157,14 +176,14 @@ export default function CreateCharacterScreen() {
     try {
       // Get existing characters from AsyncStorage
       const charactersJson = await AsyncStorage.getItem('characters');
-      
+
       let charactersArray: Character[] = [];
-      
+
       if (charactersJson) {
         // Parse existing characters array
         charactersArray = JSON.parse(charactersJson);
       }
-    
+
       // Generate a simple UUID-like string using timestamp and random values
       const uuid = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${Math.random().toString(36).substring(2, 9)}`;
 
@@ -183,18 +202,22 @@ export default function CreateCharacterScreen() {
         id: uuid,
         glowstone: roll2d6(),
         essence: 0,
+        backpack: [],
+        statuses: [],
+        weaponsAndShield: [],
       };
-      
+
       // Add the new character to the array
       charactersArray.push(newCharacter);
-      
+
       // Save back to AsyncStorage
       await AsyncStorage.setItem('characters', JSON.stringify(charactersArray));
-      
+
       // Navigate back after successful creation
       router.back();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save character';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to save character';
       setError(errorMessage);
       console.error('Error saving character:', error);
     }
@@ -213,11 +236,7 @@ export default function CreateCharacterScreen() {
           style={styles.backButton}
           activeOpacity={0.7}
         >
-          <IconSymbol
-            name="chevron.left"
-            size={24}
-            color={colors.text}
-          />
+          <IconSymbol name="chevron.left" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.title}>Create Character</Text>
         <View style={styles.placeholder} />
@@ -282,7 +301,10 @@ export default function CreateCharacterScreen() {
             colors={colors.accentGradient as [string, string, ...string[]]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
-            style={[styles.submitButtonGradient, isSubmitDisabled && styles.submitButtonDisabled]}
+            style={[
+              styles.submitButtonGradient,
+              isSubmitDisabled && styles.submitButtonDisabled,
+            ]}
           >
             <TouchableOpacity
               style={styles.submitButton}
@@ -308,23 +330,28 @@ export default function CreateCharacterScreen() {
         handleIndicatorStyle={styles.handleIndicator}
       >
         <LinearGradient
-          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradientBackground}
         >
           <View style={styles.bottomSheetHeader}>
             <Text style={styles.bottomSheetHeaderText}>Select Race</Text>
-            <TouchableOpacity onPress={closeRaceBottomSheet} style={styles.closeButton}>
+            <TouchableOpacity
+              onPress={closeRaceBottomSheet}
+              style={styles.closeButton}
+            >
               <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
           </View>
-          
-          <BottomSheetScrollView 
+
+          <BottomSheetScrollView
             contentContainerStyle={styles.optionsContent}
             showsVerticalScrollIndicator={false}
           >
-            {races.map((race) => {
+            {races.map(race => {
               const isSelected = selectedRace?.name === race.name;
               return (
                 <TouchableOpacity
@@ -333,7 +360,12 @@ export default function CreateCharacterScreen() {
                   onPress={() => handleRaceSelect(race)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                  <Text
+                    style={[
+                      styles.optionText,
+                      isSelected && styles.optionTextSelected,
+                    ]}
+                  >
                     {race.name}
                   </Text>
                 </TouchableOpacity>
@@ -355,23 +387,28 @@ export default function CreateCharacterScreen() {
         handleIndicatorStyle={styles.handleIndicator}
       >
         <LinearGradient
-          colors={colors.backgroundSecondaryGradient as [string, string, ...string[]]}
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradientBackground}
         >
           <View style={styles.bottomSheetHeader}>
             <Text style={styles.bottomSheetHeaderText}>Select Class</Text>
-            <TouchableOpacity onPress={closeClassBottomSheet} style={styles.closeButton}>
+            <TouchableOpacity
+              onPress={closeClassBottomSheet}
+              style={styles.closeButton}
+            >
               <Text style={styles.closeButtonText}>✕</Text>
             </TouchableOpacity>
           </View>
-          
-          <BottomSheetScrollView 
+
+          <BottomSheetScrollView
             contentContainerStyle={styles.optionsContent}
             showsVerticalScrollIndicator={false}
           >
-            {classes.map((classType) => {
+            {classes.map(classType => {
               const isSelected = selectedClass?.name === classType.name;
               return (
                 <TouchableOpacity
@@ -380,7 +417,12 @@ export default function CreateCharacterScreen() {
                   onPress={() => handleClassSelect(classType)}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                  <Text
+                    style={[
+                      styles.optionText,
+                      isSelected && styles.optionTextSelected,
+                    ]}
+                  >
                     {classType.name}
                   </Text>
                 </TouchableOpacity>

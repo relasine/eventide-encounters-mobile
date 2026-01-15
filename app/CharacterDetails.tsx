@@ -5,6 +5,7 @@ import {
   Text,
   ScrollView,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -61,6 +62,10 @@ export default function CharacterDetailsScreen() {
 
   const deleteConfirmationBottomSheetRef = useRef<BottomSheet>(null);
   const deleteConfirmationSnapPoints = useMemo(() => ['30%'], []);
+
+  const statusBottomSheetRef = useRef<BottomSheet>(null);
+  const statusSnapPoints = useMemo(() => ['40%'], []);
+  const [statusInput, setStatusInput] = useState<string>('');
 
   useEffect(() => {
     const loadCharacter = async () => {
@@ -550,6 +555,79 @@ export default function CharacterDetailsScreen() {
     [closeDeleteConfirmation]
   );
 
+  const openStatusBottomSheet = useCallback(() => {
+    setStatusInput('');
+    statusBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeStatusBottomSheet = useCallback(() => {
+    statusBottomSheetRef.current?.close();
+    setStatusInput('');
+  }, []);
+
+  const handleAddStatus = useCallback(async () => {
+    if (!character || !statusInput.trim()) return;
+
+    const trimmedStatus = statusInput.trim();
+    if (trimmedStatus.length === 0 || trimmedStatus.length > 20) return;
+
+    const currentStatuses = character.statuses || [];
+
+    // Check if status already exists
+    if (currentStatuses.includes(trimmedStatus)) {
+      closeStatusBottomSheet();
+      return;
+    }
+
+    try {
+      const updatedCharacter = {
+        ...character,
+        statuses: [...currentStatuses, trimmedStatus],
+      };
+      await updateCharacterInStorage(updatedCharacter);
+      closeStatusBottomSheet();
+    } catch (error) {
+      console.error('Error adding status:', error);
+      setError('Failed to add status');
+    }
+  }, [
+    character,
+    statusInput,
+    updateCharacterInStorage,
+    closeStatusBottomSheet,
+  ]);
+
+  const handleRemoveStatus = useCallback(
+    async (statusToRemove: string) => {
+      if (!character) return;
+
+      try {
+        const currentStatuses = character.statuses || [];
+        const updatedCharacter = {
+          ...character,
+          statuses: currentStatuses.filter(status => status !== statusToRemove),
+        };
+        await updateCharacterInStorage(updatedCharacter);
+      } catch (error) {
+        console.error('Error removing status:', error);
+        setError('Failed to remove status');
+      }
+    },
+    [character, updateCharacterInStorage]
+  );
+
+  const renderStatusBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeStatusBottomSheet}
+      />
+    ),
+    [closeStatusBottomSheet]
+  );
+
   return (
     <LinearGradient
       colors={colors.backgroundGradient as [string, string, ...string[]]}
@@ -648,37 +726,80 @@ export default function CharacterDetailsScreen() {
                   </View>
 
                   <View
-                    style={[styles.section, isTablet && styles.sectionTablet]}
+                    style={[
+                      styles.sectionContainer,
+                      isTablet && styles.sectionContainerTablet,
+                    ]}
                   >
+                    <View
+                      style={[styles.section, isTablet && styles.sectionTablet]}
+                    >
+                      <TouchableOpacity
+                        style={styles.infoRow}
+                        onPress={openAttackBottomSheet}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.label}>Attack:</Text>
+                        <Text style={styles.value}>{character.attack}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.infoRow}
+                        onPress={openDefenseBottomSheet}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.label}>Defense:</Text>
+                        <Text style={styles.value}>{character.defense}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.infoRow}
+                        onPress={openPositionBottomSheet}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.label}>Position:</Text>
+                        <Text style={styles.value}>
+                          {character.position !== null
+                            ? character.position
+                            : 'N/A'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.statusesSection}>
+                  <View style={styles.statusesHeader}>
+                    <Text style={styles.statusesLabel}>Status: </Text>
                     <TouchableOpacity
-                      style={styles.infoRow}
-                      onPress={openAttackBottomSheet}
+                      onPress={openStatusBottomSheet}
+                      style={styles.addStatusButton}
                       activeOpacity={0.7}
                     >
-                      <Text style={styles.label}>Attack:</Text>
-                      <Text style={styles.value}>{character.attack}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.infoRow}
-                      onPress={openDefenseBottomSheet}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.label}>Defense:</Text>
-                      <Text style={styles.value}>{character.defense}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.infoRow}
-                      onPress={openPositionBottomSheet}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.label}>Position:</Text>
-                      <Text style={styles.value}>
-                        {character.position !== null
-                          ? character.position
-                          : 'N/A'}
-                      </Text>
+                      <IconSymbol
+                        name="plus"
+                        size={20}
+                        color={Colors.dark.text}
+                      />
                     </TouchableOpacity>
                   </View>
+                  {character.statuses && character.statuses.length > 0 ? (
+                    <View style={styles.statusesContainer}>
+                      {character.statuses.map((status, index) => (
+                        <View key={index} style={styles.statusPill}>
+                          <Text style={styles.statusPillText}>{status}</Text>
+                          <TouchableOpacity
+                            onPress={() => handleRemoveStatus(status)}
+                            style={styles.statusPillRemove}
+                            activeOpacity={0.7}
+                          >
+                            <IconSymbol
+                              name="xmark"
+                              size={16}
+                              color={Colors.dark.textSecondary}
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
                 </View>
 
                 <View style={styles.counterSection}>
@@ -1300,6 +1421,68 @@ export default function CharacterDetailsScreen() {
           </BottomSheetView>
         </LinearGradient>
       </BottomSheet>
+
+      {/* Status Bottom Sheet */}
+      <BottomSheet
+        ref={statusBottomSheetRef}
+        index={-1}
+        snapPoints={statusSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderStatusBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>Add Status</Text>
+              <TouchableOpacity
+                onPress={closeStatusBottomSheet}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.statusInputContainer}>
+              <Text style={styles.statusInputLabel}>Status</Text>
+              <TextInput
+                style={styles.statusInput}
+                value={statusInput}
+                onChangeText={setStatusInput}
+                placeholder="Enter status"
+                placeholderTextColor={Colors.dark.textTertiary}
+                maxLength={20}
+                autoFocus
+              />
+              {statusInput.length >= 20 && (
+                <Text style={styles.statusInputError}>
+                  Limit 20 characters
+                </Text>
+              )}
+              <TouchableOpacity
+                onPress={handleAddStatus}
+                style={[
+                  styles.addStatusSubmitButton,
+                  (!statusInput.trim() || statusInput.trim().length > 20) &&
+                    styles.addStatusSubmitButtonDisabled,
+                ]}
+                activeOpacity={0.7}
+                disabled={!statusInput.trim() || statusInput.trim().length > 20}
+              >
+                <Text style={styles.addStatusSubmitButtonText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
     </LinearGradient>
   );
 }
@@ -1435,6 +1618,12 @@ const styles = StyleSheet.create({
   infoColumnTablet: {
     flex: 1,
   },
+  sectionContainer: {
+    width: '100%',
+  },
+  sectionContainerTablet: {
+    flex: 1,
+  },
   section: {
     marginBottom: 24,
     paddingBottom: 24,
@@ -1446,7 +1635,6 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     paddingBottom: 0,
     borderBottomWidth: 0,
-    flex: 1,
   },
   sectionTitle: {
     fontSize: 22,
@@ -1766,5 +1954,99 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#ef4444',
+  },
+  statusesSection: {
+    width: '100%',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    paddingTop: 24,
+    paddingBottom: 16,
+  },
+  statusesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  statusesLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.dark.textSecondary,
+  },
+  addStatusButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.dark.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    paddingVertical: 6,
+    paddingLeft: 12,
+    paddingRight: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  statusPillText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.dark.text,
+    marginRight: 6,
+  },
+  statusPillRemove: {
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusInputContainer: {
+    paddingHorizontal: 24,
+    gap: 16,
+  },
+  statusInputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.dark.text,
+  },
+  statusInput: {
+    backgroundColor: Colors.dark.backgroundTertiary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: Colors.dark.text,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  statusInputError: {
+    fontSize: 14,
+    color: '#ef4444',
+    marginTop: -8,
+  },
+  addStatusSubmitButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.dark.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addStatusSubmitButtonDisabled: {
+    opacity: 0.5,
+  },
+  addStatusSubmitButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.dark.text,
   },
 });

@@ -32,11 +32,19 @@ export default function PartyScreen() {
     null
   );
 
+  // Check if any character has statuses
+  const hasAnyStatuses = useMemo(() => {
+    return characters.some(char => char.statuses && char.statuses.length > 0);
+  }, [characters]);
+
   const maxHealthBottomSheetRef = useRef<BottomSheet>(null);
   const maxHealthSnapPoints = useMemo(() => ['40%'], []);
 
   const positionBottomSheetRef = useRef<BottomSheet>(null);
   const positionSnapPoints = useMemo(() => ['50%'], []);
+
+  const clearStatusesBottomSheetRef = useRef<BottomSheet>(null);
+  const clearStatusesSnapPoints = useMemo(() => ['30%'], []);
 
   const loadCharacters = useCallback(async () => {
     try {
@@ -294,6 +302,64 @@ export default function PartyScreen() {
     [closePositionBottomSheet]
   );
 
+  const openClearStatusesBottomSheet = useCallback((character: Character) => {
+    setSelectedCharacter(character);
+    clearStatusesBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeClearStatusesBottomSheet = useCallback(() => {
+    clearStatusesBottomSheetRef.current?.close();
+    setSelectedCharacter(null);
+  }, []);
+
+  const handleClearStatuses = useCallback(async () => {
+    if (!selectedCharacter) return;
+
+    try {
+      const updatedCharacter = {
+        ...selectedCharacter,
+        statuses: [],
+      };
+      await handleUpdateCharacter(updatedCharacter);
+      closeClearStatusesBottomSheet();
+    } catch (error) {
+      console.error('Error clearing statuses:', error);
+    }
+  }, [selectedCharacter, handleUpdateCharacter, closeClearStatusesBottomSheet]);
+
+  const renderClearStatusesBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeClearStatusesBottomSheet}
+      />
+    ),
+    [closeClearStatusesBottomSheet]
+  );
+
+  const handleClearAllStatuses = useCallback(async () => {
+    try {
+      const charactersJson = await AsyncStorage.getItem('characters');
+      if (!charactersJson) return;
+
+      const charactersArray: Character[] = JSON.parse(charactersJson);
+      const updatedCharacters = charactersArray.map(char => ({
+        ...char,
+        statuses: [],
+      }));
+
+      await AsyncStorage.setItem(
+        'characters',
+        JSON.stringify(updatedCharacters)
+      );
+      setCharacters(updatedCharacters);
+    } catch (error) {
+      console.error('Error clearing all statuses:', error);
+    }
+  }, []);
+
   return (
     <LinearGradient
       colors={colors.backgroundGradient as [string, string, ...string[]]}
@@ -318,7 +384,6 @@ export default function PartyScreen() {
             <RegionSelector />
             <RollSelector />
           </View>
-
           <View style={styles.content}>
             {characters.length === 0 ? (
               <View style={styles.emptyState}>
@@ -391,6 +456,39 @@ export default function PartyScreen() {
                               : 'N/A'}
                           </Text>
                         </TouchableOpacity>
+
+                        <View style={styles.statusRow}>
+                          {character.statuses &&
+                          character.statuses.length > 0 ? (
+                            <TouchableOpacity
+                              onLongPress={() =>
+                                openClearStatusesBottomSheet(character)
+                              }
+                              activeOpacity={0.7}
+                              style={styles.statusLabelContainer}
+                            >
+                              <Text style={styles.characterLabel}>
+                                Status:{' '}
+                              </Text>
+                            </TouchableOpacity>
+                          ) : (
+                            <Text style={styles.characterLabel}>Status: </Text>
+                          )}
+                          {character.statuses &&
+                          character.statuses.length > 0 ? (
+                            <View style={styles.statusesContainer}>
+                              {character.statuses.map((status, index) => (
+                                <View key={index} style={styles.statusPill}>
+                                  <Text style={styles.statusPillText}>
+                                    {status}
+                                  </Text>
+                                </View>
+                              ))}
+                            </View>
+                          ) : (
+                            <Text style={styles.characterValue}>None</Text>
+                          )}
+                        </View>
 
                         <View style={styles.counterSection}>
                           <View style={styles.counterRow}>
@@ -542,6 +640,19 @@ export default function PartyScreen() {
             )}
           </View>
         </View>
+        {hasAnyStatuses && (
+          <View style={styles.clearAllStatusesContainer}>
+            <TouchableOpacity
+              onPress={handleClearAllStatuses}
+              style={styles.clearAllStatusesButton}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.clearAllStatusesButtonText}>
+                Clear All Statuses
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
 
       <View style={[styles.footer, isTablet && styles.footerTablet]}>
@@ -680,6 +791,56 @@ export default function PartyScreen() {
           </BottomSheetScrollView>
         </LinearGradient>
       </BottomSheet>
+
+      {/* Clear Statuses Bottom Sheet */}
+      <BottomSheet
+        ref={clearStatusesBottomSheetRef}
+        index={-1}
+        snapPoints={clearStatusesSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderClearStatusesBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>Clear Statuses</Text>
+              <TouchableOpacity
+                onPress={closeClearStatusesBottomSheet}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.clearStatusesContainer}>
+              <Text style={styles.clearStatusesText}>
+                Are you sure you want to clear all statuses for{' '}
+                <Text style={styles.clearStatusesCharacterName}>
+                  {selectedCharacter?.name}
+                </Text>
+                ?
+              </Text>
+
+              <TouchableOpacity
+                onPress={handleClearStatuses}
+                style={styles.clearButton}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.clearButtonText}>Clear</Text>
+              </TouchableOpacity>
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
     </LinearGradient>
   );
 }
@@ -712,6 +873,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+  },
+  clearAllStatusesContainer: {
+    marginVertical: 16,
+    alignItems: 'center',
+  },
+  clearAllStatusesButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+  },
+  clearAllStatusesButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ef4444',
   },
   content: {
     flex: 1,
@@ -975,5 +1153,62 @@ const styles = StyleSheet.create({
   positionOptionTextSelected: {
     color: Colors.dark.text,
     fontWeight: '600',
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  statusesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    flex: 1,
+  },
+  statusPill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  statusPillText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: Colors.dark.text,
+  },
+  statusLabelContainer: {
+    minWidth: 70,
+  },
+  clearStatusesContainer: {
+    paddingHorizontal: 24,
+    gap: 24,
+  },
+  clearStatusesText: {
+    fontSize: 16,
+    color: Colors.dark.textSecondary,
+    lineHeight: 24,
+    textAlign: 'center',
+  },
+  clearStatusesCharacterName: {
+    fontWeight: '700',
+    color: Colors.dark.text,
+  },
+  clearButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clearButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ef4444',
   },
 });
