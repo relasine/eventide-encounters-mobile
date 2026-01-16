@@ -2525,7 +2525,6 @@ export default function CharacterDetailsScreen() {
                 placeholder="Enter status"
                 placeholderTextColor={Colors.dark.textTertiary}
                 maxLength={20}
-                autoFocus
               />
               {statusInput.length >= 20 && (
                 <Text style={styles.statusInputError}>Limit 20 characters</Text>
