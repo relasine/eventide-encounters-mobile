@@ -219,6 +219,8 @@ export type BackpackItem =
   | {
       name: string;
       description: string;
+      stackable: boolean;
+      qty: number;
     }
   | LuniteShard;
 

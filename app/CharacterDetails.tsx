@@ -10,10 +10,12 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import BottomSheet, {
   BottomSheetBackdrop,
   BottomSheetScrollView,
   BottomSheetView,
+  BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRegion } from '@/contexts/RegionContext';
@@ -65,49 +67,57 @@ export default function CharacterDetailsScreen() {
 
   const statusBottomSheetRef = useRef<BottomSheet>(null);
   const statusSnapPoints = useMemo(() => ['40%'], []);
+
+  const deleteBackpackItemBottomSheetRef = useRef<BottomSheet>(null);
+  const deleteBackpackItemSnapPoints = useMemo(() => ['30%'], []);
+  const [selectedBackpackItemIndex, setSelectedBackpackItemIndex] = useState<
+    number | null
+  >(null);
+
   const [statusInput, setStatusInput] = useState<string>('');
 
-  useEffect(() => {
-    const loadCharacter = async () => {
-      if (characterId === null || characterId === undefined) {
-        setError('Character ID is required');
-        setIsLoading(false);
-        return;
+  const loadCharacter = useCallback(async () => {
+    if (characterId === null || characterId === undefined) {
+      setError('Character ID is required');
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const charactersJson = await AsyncStorage.getItem('characters');
+      if (!charactersJson) {
+        throw new Error('Characters not found in storage');
       }
 
-      setIsLoading(true);
-      setError(null);
+      const charactersArray: Character[] = JSON.parse(charactersJson);
+      const foundCharacter = charactersArray.find(
+        char => char.id === characterId
+      );
 
-      try {
-        const charactersJson = await AsyncStorage.getItem('characters');
-        if (!charactersJson) {
-          throw new Error('Characters not found in storage');
-        }
-
-        const charactersArray: Character[] = JSON.parse(charactersJson);
-        const foundCharacter = charactersArray.find(
-          char => char.id === characterId
-        );
-
-        if (!foundCharacter) {
-          throw new Error('Character not found');
-        }
-
-        setCharacter(foundCharacter);
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error
-            ? error.message
-            : 'An unexpected error occurred';
-        setError(errorMessage);
-        console.error('Error loading character:', error);
-      } finally {
-        setIsLoading(false);
+      if (!foundCharacter) {
+        throw new Error('Character not found');
       }
-    };
 
-    loadCharacter();
+      setCharacter(foundCharacter);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'An unexpected error occurred';
+      setError(errorMessage);
+      console.error('Error loading character:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }, [characterId]);
+
+  // Load character on mount and refetch when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadCharacter();
+    }, [loadCharacter])
+  );
 
   const updateCharacterInStorage = async (updatedCharacter: Character) => {
     try {
@@ -628,6 +638,156 @@ export default function CharacterDetailsScreen() {
     [closeStatusBottomSheet]
   );
 
+  const openDeleteBackpackItemBottomSheet = useCallback((itemIndex: number) => {
+    setSelectedBackpackItemIndex(itemIndex);
+    deleteBackpackItemBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeDeleteBackpackItemBottomSheet = useCallback(() => {
+    deleteBackpackItemBottomSheetRef.current?.close();
+    setSelectedBackpackItemIndex(null);
+  }, []);
+
+  const handleDeleteBackpackItem = useCallback(async () => {
+    if (!character || selectedBackpackItemIndex === null) return;
+
+    try {
+      const updatedBackpack = character.backpack.filter(
+        (_, index) => index !== selectedBackpackItemIndex
+      );
+
+      const updatedCharacter = {
+        ...character,
+        backpack: updatedBackpack,
+      };
+
+      await updateCharacterInStorage(updatedCharacter);
+      closeDeleteBackpackItemBottomSheet();
+    } catch (error) {
+      console.error('Error deleting backpack item:', error);
+      setError('Failed to delete item');
+    }
+  }, [
+    character,
+    selectedBackpackItemIndex,
+    updateCharacterInStorage,
+    closeDeleteBackpackItemBottomSheet,
+  ]);
+
+  const handleUpdateBackpackItemQty = useCallback(
+    async (itemIndex: number, newQty: number) => {
+      if (!character || newQty < 0) return;
+
+      try {
+        const updatedBackpack = character.backpack.map((item, index) => {
+          if (index === itemIndex && 'qty' in item) {
+            return {
+              ...item,
+              qty: newQty,
+            };
+          }
+          return item;
+        });
+
+        const updatedCharacter = {
+          ...character,
+          backpack: updatedBackpack,
+        };
+
+        await updateCharacterInStorage(updatedCharacter);
+      } catch (error) {
+        console.error('Error updating backpack item qty:', error);
+        setError('Failed to update item quantity');
+      }
+    },
+    [character, updateCharacterInStorage]
+  );
+
+  const handleIncrementBackpackItemQty = useCallback(
+    (itemIndex: number) => {
+      if (!character) return;
+      const item = character.backpack[itemIndex];
+      if ('qty' in item && typeof item.qty === 'number') {
+        handleUpdateBackpackItemQty(itemIndex, item.qty + 1);
+      }
+    },
+    [character, handleUpdateBackpackItemQty]
+  );
+
+  const handleToggleLuniteShardEquipped = useCallback(
+    async (itemIndex: number, newEquippedState: boolean) => {
+      if (!character) return;
+
+      try {
+        const updatedBackpack = character.backpack.map((item, index) => {
+          if (index === itemIndex && 'isEquipped' in item) {
+            return {
+              ...item,
+              isEquipped: newEquippedState,
+            };
+          }
+          return item;
+        });
+
+        const updatedCharacter = {
+          ...character,
+          backpack: updatedBackpack,
+        };
+
+        await updateCharacterInStorage(updatedCharacter);
+      } catch (error) {
+        console.error('Error updating lunite shard equipped status:', error);
+        setError('Failed to update equipped status');
+      }
+    },
+    [character, updateCharacterInStorage]
+  );
+
+  const handleDecrementBackpackItemQty = useCallback(
+    async (itemIndex: number) => {
+      if (!character) return;
+      const item = character.backpack[itemIndex];
+      if ('qty' in item && typeof item.qty === 'number' && item.qty > 0) {
+        const newQty = item.qty - 1;
+
+        // If quantity would be 0 or less, remove the item from backpack
+        if (newQty <= 0) {
+          try {
+            const updatedBackpack = character.backpack.filter(
+              (_, index) => index !== itemIndex
+            );
+
+            const updatedCharacter = {
+              ...character,
+              backpack: updatedBackpack,
+            };
+
+            await updateCharacterInStorage(updatedCharacter);
+          } catch (error) {
+            console.error('Error removing backpack item:', error);
+            setError('Failed to remove item');
+          }
+        } else {
+          // Otherwise, just update the quantity
+          handleUpdateBackpackItemQty(itemIndex, newQty);
+        }
+      }
+    },
+    [character, updateCharacterInStorage, handleUpdateBackpackItemQty]
+  );
+
+  const renderDeleteBackpackItemBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeDeleteBackpackItemBottomSheet}
+      />
+    ),
+    [closeDeleteBackpackItemBottomSheet]
+  );
+
   return (
     <LinearGradient
       colors={colors.backgroundGradient as [string, string, ...string[]]}
@@ -799,7 +959,11 @@ export default function CharacterDetailsScreen() {
                         </View>
                       ))}
                     </View>
-                  ) : null}
+                  ) : (
+                    <Text style={styles.noStatusesText}>
+                      No current status effects
+                    </Text>
+                  )}
                 </View>
 
                 <View style={styles.counterSection}>
@@ -993,6 +1157,248 @@ export default function CharacterDetailsScreen() {
                       {character.class.classPassive}
                     </Text>
                   </Text>
+                </View>
+
+                <View style={styles.backpackSection}>
+                  <View style={styles.backpackHeader}>
+                    <Text style={styles.backpackLabel}>Backpack</Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (character?.id) {
+                          router.push({
+                            pathname: '/AddItem' as any,
+                            params: { characterId: character.id },
+                          });
+                        }
+                      }}
+                      style={[
+                        styles.addBackpackItemButton,
+                        character?.backpack?.length === 10 &&
+                          styles.addBackpackItemButtonDisabled,
+                      ]}
+                      activeOpacity={0.7}
+                      disabled={character?.backpack?.length === 10}
+                    >
+                      <IconSymbol
+                        name="plus"
+                        size={20}
+                        color={
+                          character?.backpack?.length === 10
+                            ? Colors.dark.textTertiary
+                            : Colors.dark.text
+                        }
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {character.backpack && character?.backpack?.length > 0 ? (
+                    <View style={styles.backpackContainer}>
+                      {character.backpack
+                        .map((item, originalIndex) => ({
+                          item,
+                          originalIndex,
+                        }))
+                        .sort((a, b) => {
+                          const aIsLuniteShard =
+                            'action' in a.item && 'stacking' in a.item;
+                          const bIsLuniteShard =
+                            'action' in b.item && 'stacking' in b.item;
+                          // LuniteShards come first (return -1), regular items come after (return 1)
+                          if (aIsLuniteShard && !bIsLuniteShard) return -1;
+                          if (!aIsLuniteShard && bIsLuniteShard) return 1;
+                          return 0; // Keep original order for items of the same type
+                        })
+                        .map(({ item, originalIndex }, displayIndex) => {
+                          const isLuniteShard =
+                            'action' in item && 'stacking' in item;
+                          const isRegularItem =
+                            'description' in item && 'stackable' in item;
+
+                        // Count equipped Lunite Shards (only items with isEquipped property, which are Lunite Shards)
+                        const equippedLuniteShardsCount =
+                          character.backpack.filter(
+                            backpackItem =>
+                              'isEquipped' in backpackItem &&
+                              'action' in backpackItem &&
+                              'stacking' in backpackItem &&
+                              backpackItem.isEquipped === true
+                          ).length;
+
+                        // Checkbox is enabled if less than 2 equipped shards, or if this item is already equipped (to allow unchecking)
+                        const canToggleEquipped =
+                          isLuniteShard &&
+                          item.isEquipped !== null &&
+                          (equippedLuniteShardsCount < 2 ||
+                            item.isEquipped === true);
+
+                        const showQtyControls =
+                          isRegularItem &&
+                          item.stackable &&
+                          item.qty !== undefined &&
+                          item.qty >= 1;
+
+                        return (
+                          <View
+                            key={originalIndex}
+                            style={styles.backpackItemContainer}
+                          >
+                            <TouchableOpacity
+                              style={styles.backpackItem}
+                              onLongPress={() =>
+                                openDeleteBackpackItemBottomSheet(originalIndex)
+                              }
+                              activeOpacity={0.7}
+                            >
+                              <View style={styles.backpackItemContent}>
+                                <View style={styles.backpackItemHeader}>
+                                  {isRegularItem ? (
+                                    <Text style={styles.backpackItemName}>
+                                      {item.name}
+                                      {item.qty && item.stackable
+                                        ? ` x${item.qty}`
+                                        : ''}
+                                    </Text>
+                                  ) : (
+                                    <Text style={styles.backpackItemName}>
+                                      {item.name}{' '}
+                                      <Text
+                                        style={{
+                                          ...styles.backpackItemMetaText,
+                                          paddingLeft: 8,
+                                        }}
+                                      >
+                                        - {item.stacking}
+                                      </Text>
+                                    </Text>
+                                  )}
+
+                                  {isLuniteShard && (
+                                    <View style={styles.luniteShardBadge}>
+                                      <Text style={styles.luniteShardBadgeText}>
+                                        Lunite Shard
+                                      </Text>
+                                    </View>
+                                  )}
+                                </View>
+
+                                {isRegularItem && (
+                                  <>
+                                    <Text
+                                      style={styles.backpackItemDescription}
+                                    >
+                                      {item.description}
+                                    </Text>
+                                    <View style={styles.backpackItemMeta}>
+                                      <Text style={styles.backpackItemMetaText}>
+                                        {item.stackable
+                                          ? 'Stackable'
+                                          : 'Not Stackable'}
+                                      </Text>
+                                    </View>
+                                  </>
+                                )}
+
+                                {isLuniteShard && (
+                                  <>
+                                    <Text
+                                      style={styles.backpackItemDescription}
+                                    >
+                                      {item.action}
+                                    </Text>
+                                    {item.isEquipped !== null && (
+                                      <TouchableOpacity
+                                        style={styles.equippedCheckboxContainer}
+                                        onPress={() => {
+                                          if (canToggleEquipped) {
+                                            handleToggleLuniteShardEquipped(
+                                              originalIndex,
+                                              !item.isEquipped
+                                            );
+                                          }
+                                        }}
+                                        disabled={!canToggleEquipped}
+                                        activeOpacity={0.7}
+                                      >
+                                        <View
+                                          style={[
+                                            styles.checkboxBox,
+                                            item.isEquipped &&
+                                              styles.checkboxBoxChecked,
+                                            !canToggleEquipped &&
+                                              styles.checkboxBoxDisabled,
+                                          ]}
+                                        >
+                                          {item.isEquipped && (
+                                            <IconSymbol
+                                              name="checkmark"
+                                              size={16}
+                                              color={Colors.dark.text}
+                                            />
+                                          )}
+                                        </View>
+                                        <Text
+                                          style={[
+                                            styles.checkboxLabel,
+                                            !canToggleEquipped &&
+                                              styles.checkboxLabelDisabled,
+                                          ]}
+                                        >
+                                          Equipped
+                                        </Text>
+                                      </TouchableOpacity>
+                                    )}
+                                  </>
+                                )}
+                              </View>
+                            </TouchableOpacity>
+
+                            {showQtyControls && (
+                              <View style={styles.backpackItemQtyControls}>
+                                <TouchableOpacity
+                                  style={styles.qtyButton}
+                                  onPress={() =>
+                                    handleDecrementBackpackItemQty(originalIndex)
+                                  }
+                                  activeOpacity={0.7}
+                                  disabled={
+                                    item.qty === undefined || item.qty <= 0
+                                  }
+                                >
+                                  <IconSymbol
+                                    name="minus"
+                                    size={16}
+                                    color={
+                                      item.qty !== undefined && item.qty > 0
+                                        ? Colors.dark.text
+                                        : Colors.dark.textTertiary
+                                    }
+                                  />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                  style={styles.qtyButton}
+                                  onPress={() =>
+                                    handleIncrementBackpackItemQty(originalIndex)
+                                  }
+                                  activeOpacity={0.7}
+                                >
+                                  <IconSymbol
+                                    name="plus"
+                                    size={16}
+                                    color={Colors.dark.text}
+                                  />
+                                </TouchableOpacity>
+                              </View>
+                            )}
+                          </View>
+                        );
+                      })}
+                    </View>
+                  ) : (
+                    <View style={styles.emptyBackpackContainer}>
+                      <Text style={styles.emptyBackpackText}>
+                        No items in backpack
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </View>
             ) : null}
@@ -1431,6 +1837,9 @@ export default function CharacterDetailsScreen() {
         backdropComponent={renderStatusBackdrop}
         backgroundStyle={styles.bottomSheetBackground}
         handleIndicatorStyle={styles.handleIndicator}
+        keyboardBehavior="interactive"
+        keyboardBlurBehavior="restore"
+        android_keyboardInputMode="adjustResize"
       >
         <LinearGradient
           colors={
@@ -1440,7 +1849,10 @@ export default function CharacterDetailsScreen() {
           end={{ x: 1, y: 1 }}
           style={styles.gradientBackground}
         >
-          <BottomSheetView style={styles.bottomSheetContent}>
+          <BottomSheetScrollView
+            contentContainerStyle={styles.bottomSheetContent}
+            keyboardShouldPersistTaps="handled"
+          >
             <View style={styles.bottomSheetHeader}>
               <Text style={styles.bottomSheetHeaderText}>Add Status</Text>
               <TouchableOpacity
@@ -1453,7 +1865,7 @@ export default function CharacterDetailsScreen() {
 
             <View style={styles.statusInputContainer}>
               <Text style={styles.statusInputLabel}>Status</Text>
-              <TextInput
+              <BottomSheetTextInput
                 style={styles.statusInput}
                 value={statusInput}
                 onChangeText={setStatusInput}
@@ -1463,9 +1875,7 @@ export default function CharacterDetailsScreen() {
                 autoFocus
               />
               {statusInput.length >= 20 && (
-                <Text style={styles.statusInputError}>
-                  Limit 20 characters
-                </Text>
+                <Text style={styles.statusInputError}>Limit 20 characters</Text>
               )}
               <TouchableOpacity
                 onPress={handleAddStatus}
@@ -1479,6 +1889,66 @@ export default function CharacterDetailsScreen() {
               >
                 <Text style={styles.addStatusSubmitButtonText}>Add</Text>
               </TouchableOpacity>
+            </View>
+          </BottomSheetScrollView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Delete Backpack Item Bottom Sheet */}
+      <BottomSheet
+        ref={deleteBackpackItemBottomSheetRef}
+        index={-1}
+        snapPoints={deleteBackpackItemSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderDeleteBackpackItemBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>Remove Item</Text>
+              <TouchableOpacity
+                onPress={closeDeleteBackpackItemBottomSheet}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.deleteConfirmationContainer}>
+              <Text style={styles.deleteConfirmationText}>
+                Are you sure you want to remove{' '}
+                <Text style={styles.deleteConfirmationCharacterName}>
+                  {character?.backpack?.[selectedBackpackItemIndex ?? -1]
+                    ?.name || 'this item'}
+                </Text>{' '}
+                from the backpack? This action cannot be undone.
+              </Text>
+
+              <View style={styles.deleteConfirmationButtons}>
+                <TouchableOpacity
+                  onPress={closeDeleteBackpackItemBottomSheet}
+                  style={styles.deleteCancelButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleDeleteBackpackItem}
+                  style={styles.deleteConfirmButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteConfirmButtonText}>Remove</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </BottomSheetView>
         </LinearGradient>
@@ -1986,6 +2456,12 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
+  noStatusesText: {
+    fontSize: 14,
+    color: Colors.dark.textTertiary,
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
   statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2048,5 +2524,151 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.dark.text,
+  },
+  backpackSection: {
+    width: '100%',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    paddingTop: 24,
+    paddingBottom: 16,
+  },
+  backpackHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  backpackLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.dark.textSecondary,
+  },
+  addBackpackItemButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.dark.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addBackpackItemButtonDisabled: {
+    backgroundColor: Colors.dark.backgroundTertiary,
+    opacity: 0.5,
+  },
+  backpackContainer: {
+    flexDirection: 'column',
+    gap: 8,
+  },
+  backpackItemContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'stretch',
+  },
+  backpackItem: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  backpackItemContent: {
+    gap: 8,
+  },
+  backpackItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  backpackItemName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.dark.text,
+    flex: 1,
+  },
+  luniteShardBadge: {
+    backgroundColor: 'rgba(139, 92, 246, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.dark.accent,
+  },
+  luniteShardBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.dark.accent,
+    textTransform: 'uppercase',
+  },
+  backpackItemDescription: {
+    fontSize: 13,
+    color: Colors.dark.textSecondary,
+    lineHeight: 18,
+  },
+  backpackItemMeta: {
+    marginTop: 4,
+  },
+  backpackItemMetaText: {
+    fontSize: 12,
+    color: Colors.dark.textTertiary,
+    fontStyle: 'italic',
+  },
+  emptyBackpackContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyBackpackText: {
+    fontSize: 14,
+    color: Colors.dark.textTertiary,
+    fontStyle: 'italic',
+  },
+  backpackItemQtyControls: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+    gap: 4,
+    paddingLeft: 4,
+  },
+  qtyButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: Colors.dark.backgroundTertiary,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  equippedCheckboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  checkboxBox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: Colors.dark.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.dark.backgroundTertiary,
+  },
+  checkboxBoxChecked: {
+    backgroundColor: Colors.dark.accent,
+    borderColor: Colors.dark.accent,
+  },
+  checkboxBoxDisabled: {
+    opacity: 0.5,
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.dark.text,
+  },
+  checkboxLabelDisabled: {
+    color: Colors.dark.textTertiary,
   },
 });
