@@ -1213,184 +1213,196 @@ export default function CharacterDetailsScreen() {
                           const isRegularItem =
                             'description' in item && 'stackable' in item;
 
-                        // Count equipped Lunite Shards (only items with isEquipped property, which are Lunite Shards)
-                        const equippedLuniteShardsCount =
-                          character.backpack.filter(
-                            backpackItem =>
-                              'isEquipped' in backpackItem &&
-                              'action' in backpackItem &&
-                              'stacking' in backpackItem &&
-                              backpackItem.isEquipped === true
-                          ).length;
+                          // Count equipped Lunite Shards (only items with isEquipped property, which are Lunite Shards)
+                          const equippedLuniteShardsCount =
+                            character.backpack.filter(
+                              backpackItem =>
+                                'isEquipped' in backpackItem &&
+                                'action' in backpackItem &&
+                                'stacking' in backpackItem &&
+                                backpackItem.isEquipped === true
+                            ).length;
 
-                        // Checkbox is enabled if less than 2 equipped shards, or if this item is already equipped (to allow unchecking)
-                        const canToggleEquipped =
-                          isLuniteShard &&
-                          item.isEquipped !== null &&
-                          (equippedLuniteShardsCount < 2 ||
-                            item.isEquipped === true);
+                          // Checkbox is enabled if less than 2 equipped shards, or if this item is already equipped (to allow unchecking)
+                          const canToggleEquipped =
+                            isLuniteShard &&
+                            item.isEquipped !== null &&
+                            (equippedLuniteShardsCount < 2 ||
+                              item.isEquipped === true);
 
-                        const showQtyControls =
-                          isRegularItem &&
-                          item.stackable &&
-                          item.qty !== undefined &&
-                          item.qty >= 1;
+                          const showQtyControls =
+                            isRegularItem &&
+                            item.stackable &&
+                            item.qty !== undefined &&
+                            item.qty >= 1;
 
-                        return (
-                          <View
-                            key={originalIndex}
-                            style={styles.backpackItemContainer}
-                          >
-                            <TouchableOpacity
-                              style={styles.backpackItem}
-                              onLongPress={() =>
-                                openDeleteBackpackItemBottomSheet(originalIndex)
-                              }
-                              activeOpacity={0.7}
+                          return (
+                            <View
+                              key={originalIndex}
+                              style={styles.backpackItemContainer}
                             >
-                              <View style={styles.backpackItemContent}>
-                                <View style={styles.backpackItemHeader}>
-                                  {isRegularItem ? (
-                                    <Text style={styles.backpackItemName}>
-                                      {item.name}
-                                      {item.qty && item.stackable
-                                        ? ` x${item.qty}`
-                                        : ''}
-                                    </Text>
-                                  ) : (
-                                    <Text style={styles.backpackItemName}>
-                                      {item.name}{' '}
-                                      <Text
-                                        style={{
-                                          ...styles.backpackItemMetaText,
-                                          paddingLeft: 8,
-                                        }}
-                                      >
-                                        - {item.stacking}
+                              <TouchableOpacity
+                                style={styles.backpackItem}
+                                onLongPress={() =>
+                                  openDeleteBackpackItemBottomSheet(
+                                    originalIndex
+                                  )
+                                }
+                                activeOpacity={0.7}
+                              >
+                                <View style={styles.backpackItemContent}>
+                                  <View style={styles.backpackItemHeader}>
+                                    {isRegularItem ? (
+                                      <Text style={styles.backpackItemName}>
+                                        {item.name}
+                                        {item.qty && item.stackable
+                                          ? ` x${item.qty}`
+                                          : ''}
                                       </Text>
-                                    </Text>
+                                    ) : (
+                                      <Text style={styles.backpackItemName}>
+                                        {item.name}{' '}
+                                        <Text
+                                          style={{
+                                            ...styles.backpackItemMetaText,
+                                            paddingLeft: 8,
+                                          }}
+                                        >
+                                          - {item.stacking}
+                                        </Text>
+                                      </Text>
+                                    )}
+
+                                    {isLuniteShard && (
+                                      <View style={styles.luniteShardBadge}>
+                                        <Text
+                                          style={styles.luniteShardBadgeText}
+                                        >
+                                          Lunite Shard
+                                        </Text>
+                                      </View>
+                                    )}
+                                  </View>
+
+                                  {isRegularItem && (
+                                    <>
+                                      <Text
+                                        style={styles.backpackItemDescription}
+                                      >
+                                        {item.description}
+                                      </Text>
+                                      <View style={styles.backpackItemMeta}>
+                                        <Text
+                                          style={styles.backpackItemMetaText}
+                                        >
+                                          {item.stackable
+                                            ? 'Stackable'
+                                            : 'Not Stackable'}
+                                        </Text>
+                                      </View>
+                                    </>
                                   )}
 
                                   {isLuniteShard && (
-                                    <View style={styles.luniteShardBadge}>
-                                      <Text style={styles.luniteShardBadgeText}>
-                                        Lunite Shard
+                                    <>
+                                      <Text
+                                        style={styles.backpackItemDescription}
+                                      >
+                                        {item.action}
                                       </Text>
-                                    </View>
+                                      {item.isEquipped !== null && (
+                                        <TouchableOpacity
+                                          style={
+                                            styles.equippedCheckboxContainer
+                                          }
+                                          onPress={() => {
+                                            if (canToggleEquipped) {
+                                              handleToggleLuniteShardEquipped(
+                                                originalIndex,
+                                                !item.isEquipped
+                                              );
+                                            }
+                                          }}
+                                          disabled={!canToggleEquipped}
+                                          activeOpacity={0.7}
+                                        >
+                                          <View
+                                            style={[
+                                              styles.checkboxBox,
+                                              item.isEquipped &&
+                                                styles.checkboxBoxChecked,
+                                              !canToggleEquipped &&
+                                                styles.checkboxBoxDisabled,
+                                            ]}
+                                          >
+                                            {item.isEquipped && (
+                                              <IconSymbol
+                                                name="checkmark"
+                                                size={16}
+                                                color={Colors.dark.text}
+                                              />
+                                            )}
+                                          </View>
+                                          <Text
+                                            style={[
+                                              styles.checkboxLabel,
+                                              !canToggleEquipped &&
+                                                styles.checkboxLabelDisabled,
+                                            ]}
+                                          >
+                                            Equipped
+                                          </Text>
+                                        </TouchableOpacity>
+                                      )}
+                                    </>
                                   )}
                                 </View>
+                              </TouchableOpacity>
 
-                                {isRegularItem && (
-                                  <>
-                                    <Text
-                                      style={styles.backpackItemDescription}
-                                    >
-                                      {item.description}
-                                    </Text>
-                                    <View style={styles.backpackItemMeta}>
-                                      <Text style={styles.backpackItemMetaText}>
-                                        {item.stackable
-                                          ? 'Stackable'
-                                          : 'Not Stackable'}
-                                      </Text>
-                                    </View>
-                                  </>
-                                )}
-
-                                {isLuniteShard && (
-                                  <>
-                                    <Text
-                                      style={styles.backpackItemDescription}
-                                    >
-                                      {item.action}
-                                    </Text>
-                                    {item.isEquipped !== null && (
-                                      <TouchableOpacity
-                                        style={styles.equippedCheckboxContainer}
-                                        onPress={() => {
-                                          if (canToggleEquipped) {
-                                            handleToggleLuniteShardEquipped(
-                                              originalIndex,
-                                              !item.isEquipped
-                                            );
-                                          }
-                                        }}
-                                        disabled={!canToggleEquipped}
-                                        activeOpacity={0.7}
-                                      >
-                                        <View
-                                          style={[
-                                            styles.checkboxBox,
-                                            item.isEquipped &&
-                                              styles.checkboxBoxChecked,
-                                            !canToggleEquipped &&
-                                              styles.checkboxBoxDisabled,
-                                          ]}
-                                        >
-                                          {item.isEquipped && (
-                                            <IconSymbol
-                                              name="checkmark"
-                                              size={16}
-                                              color={Colors.dark.text}
-                                            />
-                                          )}
-                                        </View>
-                                        <Text
-                                          style={[
-                                            styles.checkboxLabel,
-                                            !canToggleEquipped &&
-                                              styles.checkboxLabelDisabled,
-                                          ]}
-                                        >
-                                          Equipped
-                                        </Text>
-                                      </TouchableOpacity>
-                                    )}
-                                  </>
-                                )}
-                              </View>
-                            </TouchableOpacity>
-
-                            {showQtyControls && (
-                              <View style={styles.backpackItemQtyControls}>
-                                <TouchableOpacity
-                                  style={styles.qtyButton}
-                                  onPress={() =>
-                                    handleDecrementBackpackItemQty(originalIndex)
-                                  }
-                                  activeOpacity={0.7}
-                                  disabled={
-                                    item.qty === undefined || item.qty <= 0
-                                  }
-                                >
-                                  <IconSymbol
-                                    name="minus"
-                                    size={16}
-                                    color={
-                                      item.qty !== undefined && item.qty > 0
-                                        ? Colors.dark.text
-                                        : Colors.dark.textTertiary
+                              {showQtyControls && (
+                                <View style={styles.backpackItemQtyControls}>
+                                  <TouchableOpacity
+                                    style={styles.qtyButton}
+                                    onPress={() =>
+                                      handleDecrementBackpackItemQty(
+                                        originalIndex
+                                      )
                                     }
-                                  />
-                                </TouchableOpacity>
-                                <TouchableOpacity
-                                  style={styles.qtyButton}
-                                  onPress={() =>
-                                    handleIncrementBackpackItemQty(originalIndex)
-                                  }
-                                  activeOpacity={0.7}
-                                >
-                                  <IconSymbol
-                                    name="plus"
-                                    size={16}
-                                    color={Colors.dark.text}
-                                  />
-                                </TouchableOpacity>
-                              </View>
-                            )}
-                          </View>
-                        );
-                      })}
+                                    activeOpacity={0.7}
+                                    disabled={
+                                      item.qty === undefined || item.qty <= 0
+                                    }
+                                  >
+                                    <IconSymbol
+                                      name="minus"
+                                      size={16}
+                                      color={
+                                        item.qty !== undefined && item.qty > 0
+                                          ? Colors.dark.text
+                                          : Colors.dark.textTertiary
+                                      }
+                                    />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={styles.qtyButton}
+                                    onPress={() =>
+                                      handleIncrementBackpackItemQty(
+                                        originalIndex
+                                      )
+                                    }
+                                    activeOpacity={0.7}
+                                  >
+                                    <IconSymbol
+                                      name="plus"
+                                      size={16}
+                                      color={Colors.dark.text}
+                                    />
+                                  </TouchableOpacity>
+                                </View>
+                              )}
+                            </View>
+                          );
+                        })}
                     </View>
                   ) : (
                     <View style={styles.emptyBackpackContainer}>
