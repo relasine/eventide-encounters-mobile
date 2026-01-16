@@ -1483,15 +1483,54 @@ export default function CharacterDetailsScreen() {
                             w => w.equipped === true
                           ).length;
 
+                        // Check if this is a shield
+                        const isShield = !('type' in item);
+
+                        // Check if character is Berserker
+                        const isBerserker =
+                          character.class.name === 'Berserker';
+
+                        // If this is a two-handed weapon, check if any other items are equipped
+                        // Allow toggling if this two-handed weapon is already equipped
+                        const isTwoHandedWeapon =
+                          'handed' in item && item.handed === 2;
+
+                        // Check if this specific two-handed weapon is already equipped
+                        const isThisTwoHandedWeaponEquipped =
+                          isTwoHandedWeapon && item.equipped === true;
+
+                        // If this is a two-handed weapon that's NOT equipped, check if any other items are equipped
+                        const hasOtherEquippedItems =
+                          isTwoHandedWeapon && !isThisTwoHandedWeaponEquipped
+                            ? character.weaponsAndShield.some(
+                                (w, i) => i !== index && w.equipped === true
+                              )
+                            : false;
+
                         // Checkbox is enabled if:
-                        // - There's a two-handed weapon equipped: only allow unchecking existing equipped items
+                        // - Character is Berserker and this is a shield: disabled
+                        // - Character is Berserker: allow equipping two-handed weapons even if other items are equipped (max 2 total)
+                        // - This is a two-handed weapon that's already equipped: allow toggling
+                        // - This is a two-handed weapon and other non-two-handed items are equipped: disabled (unless Berserker)
+                        // - There's a two-handed weapon equipped (and this isn't it): only allow unchecking existing equipped items
                         // - There are 2 equipped items: only allow unchecking existing equipped items
                         // - Otherwise: enable the checkbox
-                        const canToggleEquipped = hasEquippedTwoHandedWeapon
-                          ? item.equipped === true
-                          : equippedWeaponsAndShieldsCount >= 2
-                            ? item.equipped === true
-                            : true;
+                        const canToggleEquipped =
+                          isBerserker && isShield
+                            ? false
+                            : isBerserker
+                              ? equippedWeaponsAndShieldsCount >= 2
+                                ? item.equipped === true
+                                : true
+                              : isThisTwoHandedWeaponEquipped
+                                ? true
+                                : hasOtherEquippedItems
+                                  ? false
+                                  : hasEquippedTwoHandedWeapon
+                                    ? item.equipped === true
+                                    : equippedWeaponsAndShieldsCount >= 2
+                                      ? item.equipped === true
+                                      : true;
 
                         return (
                           <View
@@ -1536,10 +1575,22 @@ export default function CharacterDetailsScreen() {
                                       : 'Two-Handed'}
                                   </Text>
                                 )}
-                                {item.ability && (
+                                {(item.ability ||
+                                  ('abilityName' in item &&
+                                    item.abilityName)) && (
                                   <Text
                                     style={styles.weaponOrShieldItemDescription}
                                   >
+                                    {'abilityName' in item &&
+                                      item.abilityName && (
+                                        <Text style={styles.weaponAbilityName}>
+                                          {item.abilityName}
+                                        </Text>
+                                      )}
+                                    {'abilityName' in item &&
+                                      item.abilityName &&
+                                      item.ability &&
+                                      ' - '}
                                     {item.ability}
                                   </Text>
                                 )}
@@ -3411,6 +3462,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.dark.textSecondary,
     lineHeight: 18,
+  },
+  weaponAbilityName: {
+    fontStyle: 'italic',
+    fontWeight: '600',
+    color: Colors.dark.text,
   },
   emptyWeaponsAndShieldsContainer: {
     padding: 20,
