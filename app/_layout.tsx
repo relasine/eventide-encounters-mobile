@@ -63,6 +63,10 @@ export default function RootLayout() {
                     name="AddWeaponOrShield"
                     options={{ headerShown: false }}
                   />
+                  <Stack.Screen
+                    name="AddTitle"
+                    options={{ headerShown: false }}
+                  />
                 </Stack>
                 <StatusBar style="light" />
               </ThemeProvider>

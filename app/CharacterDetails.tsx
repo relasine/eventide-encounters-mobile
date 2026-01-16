@@ -23,7 +23,7 @@ import { RegionSelector } from '@/components/RegionSelector';
 import { RollSelector } from '@/components/RollSelector';
 import { Colors } from '@/constants/theme';
 import { useResponsive } from '@/hooks/use-responsive';
-import { Character, ClassType, Weapon } from '@/constants/types';
+import { Character, ClassType, Weapon, Title } from '@/constants/types';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { API_KEY, API_URL } from '@/constants';
 
@@ -78,6 +78,14 @@ export default function CharacterDetailsScreen() {
   const deleteWeaponOrShieldSnapPoints = useMemo(() => ['30%'], []);
   const [selectedWeaponOrShieldIndex, setSelectedWeaponOrShieldIndex] =
     useState<number | null>(null);
+
+  const deleteGuildPerkBottomSheetRef = useRef<BottomSheet>(null);
+  const deleteGuildPerkSnapPoints = useMemo(() => ['30%'], []);
+
+  const deleteTitleBottomSheetRef = useRef<BottomSheet>(null);
+  const deleteTitleSnapPoints = useMemo(() => ['30%'], []);
+  const [selectedTitleForDeletion, setSelectedTitleForDeletion] =
+    useState<Title | null>(null);
 
   const [statusInput, setStatusInput] = useState<string>('');
 
@@ -867,6 +875,96 @@ export default function CharacterDetailsScreen() {
     [closeDeleteWeaponOrShieldBottomSheet]
   );
 
+  const openDeleteGuildPerkBottomSheet = useCallback(() => {
+    deleteGuildPerkBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeDeleteGuildPerkBottomSheet = useCallback(() => {
+    deleteGuildPerkBottomSheetRef.current?.close();
+  }, []);
+
+  const handleDeleteGuildPerk = useCallback(async () => {
+    if (!character) return;
+
+    try {
+      const updatedCharacter = {
+        ...character,
+        guildPerk: null,
+      };
+
+      await updateCharacterInStorage(updatedCharacter);
+      closeDeleteGuildPerkBottomSheet();
+    } catch (error) {
+      console.error('Error deleting guild perk:', error);
+      setError('Failed to delete guild perk');
+    }
+  }, [character, updateCharacterInStorage, closeDeleteGuildPerkBottomSheet]);
+
+  const renderDeleteGuildPerkBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeDeleteGuildPerkBottomSheet}
+      />
+    ),
+    [closeDeleteGuildPerkBottomSheet]
+  );
+
+  const openDeleteTitleBottomSheet = useCallback((title: Title) => {
+    setSelectedTitleForDeletion(title);
+    deleteTitleBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeDeleteTitleBottomSheet = useCallback(() => {
+    deleteTitleBottomSheetRef.current?.close();
+    setSelectedTitleForDeletion(null);
+  }, []);
+
+  const handleDeleteTitle = useCallback(async () => {
+    if (!character || selectedTitleForDeletion === null) return;
+
+    try {
+      // Find and remove the title that matches both source and titleName
+      const updatedTitles = (character.titles || []).filter(
+        title =>
+          !(
+            title.source === selectedTitleForDeletion.source &&
+            title.titleName === selectedTitleForDeletion.titleName
+          )
+      );
+
+      const updatedCharacter = {
+        ...character,
+        titles: updatedTitles,
+      };
+
+      await updateCharacterInStorage(updatedCharacter);
+      closeDeleteTitleBottomSheet();
+    } catch (error) {
+      console.error('Error deleting title:', error);
+      setError('Failed to delete title');
+    }
+  }, [
+    character,
+    selectedTitleForDeletion,
+    updateCharacterInStorage,
+    closeDeleteTitleBottomSheet,
+  ]);
+
+  const renderDeleteTitleBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeDeleteTitleBottomSheet}
+      />
+    ),
+    [closeDeleteTitleBottomSheet]
+  );
+
   const handleDecrementBackpackItemQty = useCallback(
     async (itemIndex: number) => {
       if (!character) return;
@@ -1281,6 +1379,56 @@ export default function CharacterDetailsScreen() {
                       {character.class.classPassive}
                     </Text>
                   </Text>
+                </View>
+
+                <View style={styles.guildPerksSection}>
+                  <View style={styles.guildPerksHeader}>
+                    <Text style={styles.guildPerksLabel}>Guild Perk</Text>
+                    {!character.guildPerk ? (
+                      <TouchableOpacity
+                        onPress={() => {
+                          if (character?.id) {
+                            router.push({
+                              pathname: '/AddGuildPerk' as any,
+                              params: { characterId: character.id },
+                            });
+                          }
+                        }}
+                        style={styles.addGuildPerkButton}
+                        activeOpacity={0.7}
+                      >
+                        <IconSymbol
+                          name="plus"
+                          size={20}
+                          color={Colors.dark.text}
+                        />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                  {character.guildPerk &&
+                  character.guildPerk.guild &&
+                  character.guildPerk.perk ? (
+                    <TouchableOpacity
+                      style={styles.guildPerkContainer}
+                      onLongPress={openDeleteGuildPerkBottomSheet}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.guildPerkGuildText}>
+                        {character.guildPerk.guild.charAt(0).toUpperCase() +
+                          character.guildPerk.guild.slice(1)}{' '}
+                        Guild
+                      </Text>
+                      <Text style={styles.guildPerkText}>
+                        {character.guildPerk.perk}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={styles.emptyGuildPerkContainer}>
+                      <Text style={styles.emptyGuildPerkText}>
+                        No current active Guild Perk.
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 <View style={styles.weaponsAndShieldsSection}>
@@ -1784,6 +1932,73 @@ export default function CharacterDetailsScreen() {
                       <Text style={styles.emptyBackpackText}>
                         No items in backpack
                       </Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.titlesSection}>
+                  <View style={styles.titlesHeader}>
+                    <Text style={styles.titlesLabel}>Titles</Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (character?.id) {
+                          router.push({
+                            pathname: '/AddTitle' as any,
+                            params: { characterId: character.id },
+                          });
+                        }
+                      }}
+                      style={styles.addTitleButton}
+                      activeOpacity={0.7}
+                    >
+                      <IconSymbol
+                        name="plus"
+                        size={20}
+                        color={Colors.dark.text}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {character.titles && character.titles.length > 0 ? (
+                    <View style={styles.titlesContainer}>
+                      {(() => {
+                        // Group titles by source
+                        const titlesBySource: Record<string, Title[]> = {};
+                        (character.titles || []).forEach(title => {
+                          if (!titlesBySource[title.source]) {
+                            titlesBySource[title.source] = [];
+                          }
+                          titlesBySource[title.source].push(title);
+                        });
+
+                        // Render each source group
+                        return Object.entries(titlesBySource).map(
+                          ([source, titles]) => (
+                            <View key={source} style={styles.titleSourceGroup}>
+                              <Text style={styles.titleSourceLabel}>
+                                {source}
+                              </Text>
+                              {titles.map((title, index) => (
+                                <TouchableOpacity
+                                  key={`${source}-${index}`}
+                                  style={styles.titleItem}
+                                  onLongPress={() =>
+                                    openDeleteTitleBottomSheet(title)
+                                  }
+                                  activeOpacity={0.7}
+                                >
+                                  <Text style={styles.titleItemText}>
+                                    {title.titleName}
+                                  </Text>
+                                </TouchableOpacity>
+                              ))}
+                            </View>
+                          )
+                        );
+                      })()}
+                    </View>
+                  ) : (
+                    <View style={styles.emptyTitlesContainer}>
+                      <Text style={styles.emptyTitlesText}>No titles</Text>
                     </View>
                   )}
                 </View>
@@ -2391,6 +2606,130 @@ export default function CharacterDetailsScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleDeleteWeaponOrShield}
+                  style={styles.deleteConfirmButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteConfirmButtonText}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Delete Guild Perk Bottom Sheet */}
+      <BottomSheet
+        ref={deleteGuildPerkBottomSheetRef}
+        index={-1}
+        snapPoints={deleteGuildPerkSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderDeleteGuildPerkBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>
+                Remove Guild Perk
+              </Text>
+              <TouchableOpacity
+                onPress={closeDeleteGuildPerkBottomSheet}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.deleteConfirmationContainer}>
+              <Text style={styles.deleteConfirmationText}>
+                Are you sure you want to remove the{' '}
+                <Text style={styles.deleteConfirmationCharacterName}>
+                  {character?.guildPerk?.guild
+                    ? character.guildPerk.guild.charAt(0).toUpperCase() +
+                      character.guildPerk.guild.slice(1) +
+                      ' Guild'
+                    : 'Guild'}
+                </Text>{' '}
+                perk? This action cannot be undone.
+              </Text>
+
+              <View style={styles.deleteConfirmationButtons}>
+                <TouchableOpacity
+                  onPress={closeDeleteGuildPerkBottomSheet}
+                  style={styles.deleteCancelButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleDeleteGuildPerk}
+                  style={styles.deleteConfirmButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteConfirmButtonText}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Delete Title Bottom Sheet */}
+      <BottomSheet
+        ref={deleteTitleBottomSheetRef}
+        index={-1}
+        snapPoints={deleteTitleSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderDeleteTitleBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>Remove Title</Text>
+              <TouchableOpacity
+                onPress={closeDeleteTitleBottomSheet}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.deleteConfirmationContainer}>
+              <Text style={styles.deleteConfirmationText}>
+                Are you sure you want to remove the title{' '}
+                <Text style={styles.deleteConfirmationCharacterName}>
+                  {selectedTitleForDeletion?.titleName || 'this title'}
+                </Text>{' '}
+                ? This action cannot be undone.
+              </Text>
+
+              <View style={styles.deleteConfirmationButtons}>
+                <TouchableOpacity
+                  onPress={closeDeleteTitleBottomSheet}
+                  style={styles.deleteCancelButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleDeleteTitle}
                   style={styles.deleteConfirmButton}
                   activeOpacity={0.7}
                 >
@@ -3083,6 +3422,61 @@ const styles = StyleSheet.create({
     color: Colors.dark.textTertiary,
     fontStyle: 'italic',
   },
+  guildPerksSection: {
+    width: '100%',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    paddingTop: 24,
+    paddingBottom: 16,
+  },
+  guildPerksHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  guildPerksLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.dark.textSecondary,
+  },
+  addGuildPerkButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.dark.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  guildPerkContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  guildPerkGuildText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.dark.textSecondary,
+    marginBottom: 8,
+    textTransform: 'capitalize',
+  },
+  guildPerkText: {
+    fontSize: 16,
+    color: Colors.dark.text,
+    lineHeight: 22,
+  },
+  emptyGuildPerkContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyGuildPerkText: {
+    fontSize: 14,
+    color: Colors.dark.textTertiary,
+    fontStyle: 'italic',
+  },
   weaponOrShieldBottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -3265,5 +3659,66 @@ const styles = StyleSheet.create({
   },
   checkboxLabelDisabled: {
     color: Colors.dark.textTertiary,
+  },
+  titlesSection: {
+    width: '100%',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    paddingTop: 24,
+    paddingBottom: 16,
+  },
+  titlesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  titlesLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.dark.textSecondary,
+  },
+  addTitleButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.dark.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  titlesContainer: {
+    flexDirection: 'column',
+    gap: 16,
+  },
+  titleSourceGroup: {
+    gap: 8,
+  },
+  titleSourceLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.dark.textSecondary,
+    marginBottom: 4,
+  },
+  titleItem: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  titleItemText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.dark.text,
+  },
+  emptyTitlesContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitlesText: {
+    fontSize: 14,
+    color: Colors.dark.textTertiary,
+    fontStyle: 'italic',
   },
 });

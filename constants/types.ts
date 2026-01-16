@@ -183,6 +183,29 @@ export type Character = {
   statuses: string[];
   backpack: BackpackItem[];
   weaponsAndShield: EquippedWeaponsOrShields;
+  guildPerk: GuildPerk | null;
+  titles: Title[];
+};
+
+export type Title = {
+  source:
+    | 'Universal'
+    | 'Sundessa'
+    | 'Mantora'
+    | 'Torgul'
+    | 'Ridian'
+    | 'Jakkar'
+    | 'Olma'
+    | "Fighter's Guild"
+    | "Hunter's Guild"
+    | "Mage's Guild"
+    | "Merchant's Guild";
+  titleName: string;
+};
+
+export type GuildPerk = {
+  guild: "fighter's" | "hunter's" | "mage's" | "merchant's" | null;
+  perk: string | null;
 };
 
 export type EquippedWeaponOrShield = Weapon | Shield;

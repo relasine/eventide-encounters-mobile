@@ -205,6 +205,8 @@ export default function CreateCharacterScreen() {
         backpack: [],
         statuses: [],
         weaponsAndShield: [],
+        guildPerk: null,
+        titles: [],
       };
 
       // Add the new character to the array
