@@ -196,11 +196,13 @@ export type Weapon = {
   abilityName: string | null;
   ability: string | null;
   actionType: 'free action' | 'primary action' | null;
+  equipped: boolean;
 };
 
 export type Shield = {
   name: string;
-  ability: string;
+  ability: string | null;
+  equipped: boolean;
 };
 
 export type EquippedWeaponsOrShields =

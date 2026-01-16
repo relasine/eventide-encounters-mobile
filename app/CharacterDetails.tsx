@@ -23,7 +23,7 @@ import { RegionSelector } from '@/components/RegionSelector';
 import { RollSelector } from '@/components/RollSelector';
 import { Colors } from '@/constants/theme';
 import { useResponsive } from '@/hooks/use-responsive';
-import { Character, ClassType } from '@/constants/types';
+import { Character, ClassType, Weapon } from '@/constants/types';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { API_KEY, API_URL } from '@/constants';
 
@@ -73,6 +73,11 @@ export default function CharacterDetailsScreen() {
   const [selectedBackpackItemIndex, setSelectedBackpackItemIndex] = useState<
     number | null
   >(null);
+
+  const deleteWeaponOrShieldBottomSheetRef = useRef<BottomSheet>(null);
+  const deleteWeaponOrShieldSnapPoints = useMemo(() => ['30%'], []);
+  const [selectedWeaponOrShieldIndex, setSelectedWeaponOrShieldIndex] =
+    useState<number | null>(null);
 
   const [statusInput, setStatusInput] = useState<string>('');
 
@@ -743,6 +748,125 @@ export default function CharacterDetailsScreen() {
     [character, updateCharacterInStorage]
   );
 
+  const handleToggleWeaponOrShieldEquipped = useCallback(
+    async (itemIndex: number, newEquippedState: boolean) => {
+      if (!character) return;
+
+      try {
+        const updatedWeaponsAndShields = character.weaponsAndShield.map(
+          (item, index) => {
+            if (index === itemIndex) {
+              return {
+                ...item,
+                equipped: newEquippedState,
+              };
+            }
+            return item;
+          }
+        ) as typeof character.weaponsAndShield;
+
+        const updatedCharacter = {
+          ...character,
+          weaponsAndShield: updatedWeaponsAndShields,
+        };
+
+        await updateCharacterInStorage(updatedCharacter);
+      } catch (error) {
+        console.error('Error updating weapon/shield equipped status:', error);
+        setError('Failed to update equipped status');
+      }
+    },
+    [character, updateCharacterInStorage]
+  );
+
+  const handleUpdateWeaponCharge = useCallback(
+    async (itemIndex: number, newCharge: number) => {
+      if (!character) return;
+
+      try {
+        const updatedWeaponsAndShields = character.weaponsAndShield.map(
+          (item, index) => {
+            if (index === itemIndex && 'maxCharges' in item) {
+              const weapon = item as Weapon;
+              const maxCharges = weapon.maxCharges ?? 0;
+              const clampedCharge = Math.max(
+                0,
+                Math.min(newCharge, maxCharges)
+              ) as 0 | 1 | 2 | 3 | 4 | 5 | null;
+              return {
+                ...weapon,
+                currentCharge: clampedCharge,
+              };
+            }
+            return item;
+          }
+        ) as typeof character.weaponsAndShield;
+
+        const updatedCharacter = {
+          ...character,
+          weaponsAndShield: updatedWeaponsAndShields,
+        };
+
+        await updateCharacterInStorage(updatedCharacter);
+      } catch (error) {
+        console.error('Error updating weapon charge:', error);
+        setError('Failed to update weapon charge');
+      }
+    },
+    [character, updateCharacterInStorage]
+  );
+
+  const openDeleteWeaponOrShieldBottomSheet = useCallback(
+    (itemIndex: number) => {
+      setSelectedWeaponOrShieldIndex(itemIndex);
+      deleteWeaponOrShieldBottomSheetRef.current?.snapToIndex(0);
+    },
+    []
+  );
+
+  const closeDeleteWeaponOrShieldBottomSheet = useCallback(() => {
+    deleteWeaponOrShieldBottomSheetRef.current?.close();
+    setSelectedWeaponOrShieldIndex(null);
+  }, []);
+
+  const handleDeleteWeaponOrShield = useCallback(async () => {
+    if (!character || selectedWeaponOrShieldIndex === null) return;
+
+    try {
+      const updatedWeaponsAndShields = character.weaponsAndShield.filter(
+        (_, index) => index !== selectedWeaponOrShieldIndex
+      ) as typeof character.weaponsAndShield;
+
+      const updatedCharacter = {
+        ...character,
+        weaponsAndShield: updatedWeaponsAndShields,
+      };
+
+      await updateCharacterInStorage(updatedCharacter);
+      closeDeleteWeaponOrShieldBottomSheet();
+    } catch (error) {
+      console.error('Error deleting weapon/shield:', error);
+      setError('Failed to delete weapon/shield');
+    }
+  }, [
+    character,
+    selectedWeaponOrShieldIndex,
+    updateCharacterInStorage,
+    closeDeleteWeaponOrShieldBottomSheet,
+  ]);
+
+  const renderDeleteWeaponOrShieldBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeDeleteWeaponOrShieldBottomSheet}
+      />
+    ),
+    [closeDeleteWeaponOrShieldBottomSheet]
+  );
+
   const handleDecrementBackpackItemQty = useCallback(
     async (itemIndex: number) => {
       if (!character) return;
@@ -1159,6 +1283,257 @@ export default function CharacterDetailsScreen() {
                   </Text>
                 </View>
 
+                <View style={styles.weaponsAndShieldsSection}>
+                  <View style={styles.weaponsAndShieldsHeader}>
+                    <Text style={styles.weaponsAndShieldsLabel}>
+                      Weapons & Shields
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (character?.id) {
+                          router.push({
+                            pathname: '/AddWeaponOrShield' as any,
+                            params: { characterId: character.id },
+                          });
+                        }
+                      }}
+                      style={[
+                        styles.addWeaponOrShieldButton,
+                        (character?.weaponsAndShield?.length ?? 0) >= 4 &&
+                          styles.addWeaponOrShieldButtonDisabled,
+                      ]}
+                      activeOpacity={0.7}
+                      disabled={(character?.weaponsAndShield?.length ?? 0) >= 4}
+                    >
+                      <IconSymbol
+                        name="plus"
+                        size={20}
+                        color={
+                          (character?.weaponsAndShield?.length ?? 0) >= 4
+                            ? Colors.dark.textTertiary
+                            : Colors.dark.text
+                        }
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {character.weaponsAndShield &&
+                  character.weaponsAndShield.length > 0 ? (
+                    <View style={styles.weaponsAndShieldsContainer}>
+                      {character.weaponsAndShield.map((item, index) => {
+                        // Check if there's a two-handed weapon that's equipped
+                        const hasEquippedTwoHandedWeapon =
+                          character.weaponsAndShield.some(
+                            w =>
+                              'handed' in w &&
+                              w.handed === 2 &&
+                              w.equipped === true
+                          );
+
+                        // Count equipped weapons/shields
+                        const equippedWeaponsAndShieldsCount =
+                          character.weaponsAndShield.filter(
+                            w => w.equipped === true
+                          ).length;
+
+                        // Checkbox is enabled if:
+                        // - There's a two-handed weapon equipped: only allow unchecking existing equipped items
+                        // - There are 2 equipped items: only allow unchecking existing equipped items
+                        // - Otherwise: enable the checkbox
+                        const canToggleEquipped = hasEquippedTwoHandedWeapon
+                          ? item.equipped === true
+                          : equippedWeaponsAndShieldsCount >= 2
+                            ? item.equipped === true
+                            : true;
+
+                        return (
+                          <View
+                            key={index}
+                            style={styles.weaponOrShieldItemContainer}
+                          >
+                            <TouchableOpacity
+                              style={styles.weaponOrShieldItem}
+                              onLongPress={() =>
+                                openDeleteWeaponOrShieldBottomSheet(index)
+                              }
+                              activeOpacity={0.7}
+                            >
+                              <View style={styles.weaponOrShieldItemContent}>
+                                <View style={styles.weaponOrShieldItemHeader}>
+                                  <Text style={styles.weaponOrShieldItemName}>
+                                    {item.name}
+                                  </Text>
+                                  {'type' in item && (
+                                    <View style={styles.weaponBadge}>
+                                      <Text style={styles.weaponBadgeText}>
+                                        {item.type === 'melee'
+                                          ? 'Melee'
+                                          : item.type === 'ranged'
+                                            ? 'Ranged'
+                                            : 'Arcane'}
+                                      </Text>
+                                    </View>
+                                  )}
+                                  {!('type' in item) && (
+                                    <View style={styles.shieldBadge}>
+                                      <Text style={styles.shieldBadgeText}>
+                                        Shield
+                                      </Text>
+                                    </View>
+                                  )}
+                                </View>
+                                {'handed' in item && (
+                                  <Text style={styles.weaponOrShieldItemMeta}>
+                                    {item.handed === 1
+                                      ? 'One-Handed'
+                                      : 'Two-Handed'}
+                                  </Text>
+                                )}
+                                {item.ability && (
+                                  <Text
+                                    style={styles.weaponOrShieldItemDescription}
+                                  >
+                                    {item.ability}
+                                  </Text>
+                                )}
+                                <View style={styles.weaponOrShieldBottomRow}>
+                                  <TouchableOpacity
+                                    style={styles.equippedCheckboxContainer}
+                                    onPress={() => {
+                                      if (canToggleEquipped) {
+                                        handleToggleWeaponOrShieldEquipped(
+                                          index,
+                                          !item.equipped
+                                        );
+                                      }
+                                    }}
+                                    disabled={!canToggleEquipped}
+                                    activeOpacity={0.7}
+                                  >
+                                    <View
+                                      style={[
+                                        styles.checkboxBox,
+                                        item.equipped &&
+                                          styles.checkboxBoxChecked,
+                                        !canToggleEquipped &&
+                                          styles.checkboxBoxDisabled,
+                                      ]}
+                                    >
+                                      {item.equipped && (
+                                        <IconSymbol
+                                          name="checkmark"
+                                          size={16}
+                                          color={Colors.dark.text}
+                                        />
+                                      )}
+                                    </View>
+                                    <Text
+                                      style={[
+                                        styles.checkboxLabel,
+                                        !canToggleEquipped &&
+                                          styles.checkboxLabelDisabled,
+                                      ]}
+                                    >
+                                      Equipped
+                                    </Text>
+                                  </TouchableOpacity>
+                                  {'maxCharges' in item &&
+                                    item.maxCharges !== null && (
+                                      <View
+                                        style={styles.weaponChargesContainer}
+                                      >
+                                        <Text style={styles.weaponChargesLabel}>
+                                          Weapon Charges:
+                                        </Text>
+                                        <View
+                                          style={styles.weaponChargesControls}
+                                        >
+                                          <TouchableOpacity
+                                            style={styles.weaponChargesButton}
+                                            onPress={() => {
+                                              const weapon = item as Weapon;
+                                              handleUpdateWeaponCharge(
+                                                index,
+                                                (weapon.currentCharge ?? 0) - 1
+                                              );
+                                            }}
+                                            disabled={
+                                              (item as Weapon).currentCharge ===
+                                                null ||
+                                              ((item as Weapon).currentCharge ??
+                                                0) === 0
+                                            }
+                                            activeOpacity={0.7}
+                                          >
+                                            <IconSymbol
+                                              name="minus"
+                                              size={16}
+                                              color={
+                                                (item as Weapon)
+                                                  .currentCharge === null ||
+                                                ((item as Weapon)
+                                                  .currentCharge ?? 0) === 0
+                                                  ? Colors.dark.textTertiary
+                                                  : Colors.dark.text
+                                              }
+                                            />
+                                          </TouchableOpacity>
+                                          <Text
+                                            style={styles.weaponChargesValue}
+                                          >
+                                            {(item as Weapon).currentCharge ??
+                                              0}
+                                            /{item.maxCharges}
+                                          </Text>
+                                          <TouchableOpacity
+                                            style={styles.weaponChargesButton}
+                                            onPress={() => {
+                                              const weapon = item as Weapon;
+                                              handleUpdateWeaponCharge(
+                                                index,
+                                                (weapon.currentCharge ?? 0) + 1
+                                              );
+                                            }}
+                                            disabled={
+                                              (item as Weapon).currentCharge ===
+                                                null ||
+                                              ((item as Weapon).currentCharge ??
+                                                0) >= item.maxCharges
+                                            }
+                                            activeOpacity={0.7}
+                                          >
+                                            <IconSymbol
+                                              name="plus"
+                                              size={16}
+                                              color={
+                                                (item as Weapon)
+                                                  .currentCharge === null ||
+                                                ((item as Weapon)
+                                                  .currentCharge ?? 0) >=
+                                                  item.maxCharges
+                                                  ? Colors.dark.textTertiary
+                                                  : Colors.dark.text
+                                              }
+                                            />
+                                          </TouchableOpacity>
+                                        </View>
+                                      </View>
+                                    )}
+                                </View>
+                              </View>
+                            </TouchableOpacity>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  ) : (
+                    <View style={styles.emptyWeaponsAndShieldsContainer}>
+                      <Text style={styles.emptyWeaponsAndShieldsText}>
+                        No weapons or shields
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
                 <View style={styles.backpackSection}>
                   <View style={styles.backpackHeader}>
                     <Text style={styles.backpackLabel}>Backpack</Text>
@@ -1364,6 +1739,21 @@ export default function CharacterDetailsScreen() {
                                   <TouchableOpacity
                                     style={styles.qtyButton}
                                     onPress={() =>
+                                      handleIncrementBackpackItemQty(
+                                        originalIndex
+                                      )
+                                    }
+                                    activeOpacity={0.7}
+                                  >
+                                    <IconSymbol
+                                      name="plus"
+                                      size={16}
+                                      color={Colors.dark.text}
+                                    />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={styles.qtyButton}
+                                    onPress={() =>
                                       handleDecrementBackpackItemQty(
                                         originalIndex
                                       )
@@ -1381,21 +1771,6 @@ export default function CharacterDetailsScreen() {
                                           ? Colors.dark.text
                                           : Colors.dark.textTertiary
                                       }
-                                    />
-                                  </TouchableOpacity>
-                                  <TouchableOpacity
-                                    style={styles.qtyButton}
-                                    onPress={() =>
-                                      handleIncrementBackpackItemQty(
-                                        originalIndex
-                                      )
-                                    }
-                                    activeOpacity={0.7}
-                                  >
-                                    <IconSymbol
-                                      name="plus"
-                                      size={16}
-                                      color={Colors.dark.text}
                                     />
                                   </TouchableOpacity>
                                 </View>
@@ -1955,6 +2330,67 @@ export default function CharacterDetailsScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleDeleteBackpackItem}
+                  style={styles.deleteConfirmButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteConfirmButtonText}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Delete Weapon or Shield Bottom Sheet */}
+      <BottomSheet
+        ref={deleteWeaponOrShieldBottomSheetRef}
+        index={-1}
+        snapPoints={deleteWeaponOrShieldSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderDeleteWeaponOrShieldBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>Remove Item</Text>
+              <TouchableOpacity
+                onPress={closeDeleteWeaponOrShieldBottomSheet}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.deleteConfirmationContainer}>
+              <Text style={styles.deleteConfirmationText}>
+                Are you sure you want to remove{' '}
+                <Text style={styles.deleteConfirmationCharacterName}>
+                  {character?.weaponsAndShield?.[
+                    selectedWeaponOrShieldIndex ?? -1
+                  ]?.name || 'this item'}
+                </Text>{' '}
+                from the weapons and shields? This action cannot be undone.
+              </Text>
+
+              <View style={styles.deleteConfirmationButtons}>
+                <TouchableOpacity
+                  onPress={closeDeleteWeaponOrShieldBottomSheet}
+                  style={styles.deleteCancelButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleDeleteWeaponOrShield}
                   style={styles.deleteConfirmButton}
                   activeOpacity={0.7}
                 >
@@ -2536,6 +2972,153 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: Colors.dark.text,
+  },
+  weaponsAndShieldsSection: {
+    width: '100%',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    paddingTop: 24,
+    paddingBottom: 16,
+  },
+  weaponsAndShieldsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  weaponsAndShieldsLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.dark.textSecondary,
+  },
+  addWeaponOrShieldButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.dark.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addWeaponOrShieldButtonDisabled: {
+    backgroundColor: Colors.dark.backgroundTertiary,
+    opacity: 0.5,
+  },
+  weaponsAndShieldsContainer: {
+    flexDirection: 'column',
+    gap: 8,
+  },
+  weaponOrShieldItemContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'stretch',
+  },
+  weaponOrShieldItem: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  weaponOrShieldItemContent: {
+    gap: 8,
+  },
+  weaponOrShieldItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  weaponOrShieldItemName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.dark.text,
+    flex: 1,
+  },
+  weaponBadge: {
+    backgroundColor: 'rgba(139, 92, 246, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.dark.accent,
+  },
+  weaponBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.dark.accent,
+    textTransform: 'uppercase',
+  },
+  shieldBadge: {
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#3b82f6',
+  },
+  shieldBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#3b82f6',
+    textTransform: 'uppercase',
+  },
+  weaponOrShieldItemMeta: {
+    fontSize: 12,
+    color: Colors.dark.textTertiary,
+    fontStyle: 'italic',
+  },
+  weaponOrShieldItemDescription: {
+    fontSize: 13,
+    color: Colors.dark.textSecondary,
+    lineHeight: 18,
+  },
+  emptyWeaponsAndShieldsContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyWeaponsAndShieldsText: {
+    fontSize: 14,
+    color: Colors.dark.textTertiary,
+    fontStyle: 'italic',
+  },
+  weaponOrShieldBottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  weaponChargesContainer: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  weaponChargesLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.dark.textSecondary,
+  },
+  weaponChargesControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  weaponChargesButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: Colors.dark.backgroundTertiary,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  weaponChargesValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.dark.text,
+    minWidth: 40,
+    textAlign: 'center',
   },
   backpackSection: {
     width: '100%',
