@@ -1,0 +1,4019 @@
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import BottomSheet, {
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+  BottomSheetView,
+  BottomSheetTextInput,
+} from '@gorhom/bottom-sheet';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRegion } from '@/contexts/RegionContext';
+import { DefendRoll } from '@/components/DefendRoll';
+import { RollSelector } from '@/components/RollSelector';
+import { Colors } from '@/constants/theme';
+import { useResponsive } from '@/hooks/use-responsive';
+import { Character, ClassType, Weapon, Title, Region } from '@/constants/types';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { API_KEY, API_URL } from '@/constants';
+import { statuses } from '@/constants/statuses';
+
+export default function CharacterDetailsScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const { region } = useRegion();
+  const colors = Colors.dark;
+  const { isTablet } = useResponsive();
+
+  const characterId: string | null =
+    params.id !== undefined && params.id !== null
+      ? (params.id as string)
+      : null;
+  const [character, setCharacter] = useState<Character | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [classes, setClasses] = useState<ClassType[]>([]);
+  const [isLoadingClasses, setIsLoadingClasses] = useState(false);
+
+  const positionBottomSheetRef = useRef<BottomSheet>(null);
+  const positionSnapPoints = useMemo(() => ['50%'], []);
+
+  const maxHealthBottomSheetRef = useRef<BottomSheet>(null);
+  const maxHealthSnapPoints = useMemo(() => ['40%'], []);
+
+  const levelBottomSheetRef = useRef<BottomSheet>(null);
+  const levelSnapPoints = useMemo(() => ['40%'], []);
+
+  const attackBottomSheetRef = useRef<BottomSheet>(null);
+  const attackSnapPoints = useMemo(() => ['40%'], []);
+
+  const defenseBottomSheetRef = useRef<BottomSheet>(null);
+  const defenseSnapPoints = useMemo(() => ['40%'], []);
+
+  const classBottomSheetRef = useRef<BottomSheet>(null);
+  const classSnapPoints = useMemo(() => ['90%'], []);
+
+  const deleteConfirmationBottomSheetRef = useRef<BottomSheet>(null);
+  const deleteConfirmationSnapPoints = useMemo(() => ['30%'], []);
+
+  const statusBottomSheetRef = useRef<BottomSheet>(null);
+  const statusSnapPoints = useMemo(() => ['40%'], []);
+
+  const deleteBackpackItemBottomSheetRef = useRef<BottomSheet>(null);
+  const deleteBackpackItemSnapPoints = useMemo(() => ['30%'], []);
+  const [selectedBackpackItemIndex, setSelectedBackpackItemIndex] = useState<
+    number | null
+  >(null);
+
+  const deleteWeaponOrShieldBottomSheetRef = useRef<BottomSheet>(null);
+  const deleteWeaponOrShieldSnapPoints = useMemo(() => ['30%'], []);
+  const [selectedWeaponOrShieldIndex, setSelectedWeaponOrShieldIndex] =
+    useState<number | null>(null);
+
+  const deleteGuildPerkBottomSheetRef = useRef<BottomSheet>(null);
+  const deleteGuildPerkSnapPoints = useMemo(() => ['30%'], []);
+
+  const deleteTitleBottomSheetRef = useRef<BottomSheet>(null);
+  const deleteTitleSnapPoints = useMemo(() => ['30%'], []);
+  const [selectedTitleForDeletion, setSelectedTitleForDeletion] =
+    useState<Title | null>(null);
+
+  const [statusInput, setStatusInput] = useState<string>('');
+
+  const loadCharacter = useCallback(async () => {
+    if (characterId === null || characterId === undefined) {
+      setError('Character ID is required');
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const charactersJson = await AsyncStorage.getItem('characters');
+      if (!charactersJson) {
+        throw new Error('Characters not found in storage');
+      }
+
+      const charactersArray: Character[] = JSON.parse(charactersJson);
+      const foundCharacter = charactersArray.find(
+        char => char.id === characterId
+      );
+
+      if (!foundCharacter) {
+        throw new Error('Character not found');
+      }
+
+      setCharacter(foundCharacter);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'An unexpected error occurred';
+      setError(errorMessage);
+      console.error('Error loading character:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [characterId]);
+
+  // Load character on mount and refetch when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadCharacter();
+    }, [loadCharacter])
+  );
+
+  const updateCharacterInStorage = async (updatedCharacter: Character) => {
+    try {
+      const charactersJson = await AsyncStorage.getItem('characters');
+      if (!charactersJson) return;
+
+      const charactersArray: Character[] = JSON.parse(charactersJson);
+      const updatedArray = charactersArray.map(char =>
+        char.id === updatedCharacter.id ? updatedCharacter : char
+      );
+
+      await AsyncStorage.setItem('characters', JSON.stringify(updatedArray));
+      setCharacter(updatedCharacter);
+    } catch (error) {
+      console.error('Error updating character:', error);
+      setError('Failed to update character');
+    }
+  };
+
+  const openPositionBottomSheet = useCallback(() => {
+    positionBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closePositionBottomSheet = useCallback(() => {
+    positionBottomSheetRef.current?.close();
+  }, []);
+
+  const handlePositionSelect = async (
+    selectedPosition: 1 | 2 | 3 | 4 | null
+  ) => {
+    if (!character) return;
+
+    try {
+      const charactersJson = await AsyncStorage.getItem('characters');
+      if (!charactersJson) return;
+
+      const charactersArray: Character[] = JSON.parse(charactersJson);
+
+      // If selecting a position (1-4), clear all other characters with that position
+      if (selectedPosition !== null) {
+        charactersArray.forEach(char => {
+          if (char.position === selectedPosition && char.id !== character.id) {
+            char.position = null;
+          }
+        });
+      }
+
+      // Update the current character's position
+      const updatedCharacter = { ...character, position: selectedPosition };
+      const updatedArray = charactersArray.map(char =>
+        char.id === character.id ? updatedCharacter : char
+      );
+
+      await AsyncStorage.setItem('characters', JSON.stringify(updatedArray));
+      setCharacter(updatedCharacter);
+      closePositionBottomSheet();
+    } catch (error) {
+      console.error('Error updating position:', error);
+      setError('Failed to update position');
+    }
+  };
+
+  const renderPositionBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closePositionBottomSheet}
+      />
+    ),
+    [closePositionBottomSheet]
+  );
+
+  const handleIncrementSurges = () => {
+    if (!character || character?.surges === null || character?.surges >= 5)
+      return;
+    const updated = { ...character, surges: character.surges + 1 };
+    updateCharacterInStorage(updated);
+  };
+
+  const handleDecrementSurges = () => {
+    if (!character) return;
+    const updated = { ...character, surges: Math.max(0, character.surges - 1) };
+    updateCharacterInStorage(updated);
+  };
+
+  const handleIncrementGlowstone = () => {
+    if (!character) return;
+    const updated = { ...character, glowstone: character.glowstone + 1 };
+    updateCharacterInStorage(updated);
+  };
+
+  const handleDecrementGlowstone = () => {
+    if (!character) return;
+    const updated = {
+      ...character,
+      glowstone: Math.max(0, character.glowstone - 1),
+    };
+    updateCharacterInStorage(updated);
+  };
+
+  const handleIncrementEssence = () => {
+    if (!character) return;
+    const updated = { ...character, essence: character.essence + 1 };
+    updateCharacterInStorage(updated);
+  };
+
+  const handleDecrementEssence = () => {
+    if (!character) return;
+    const updated = {
+      ...character,
+      essence: Math.max(0, character.essence - 1),
+    };
+    updateCharacterInStorage(updated);
+  };
+
+  const handleIncrementChi = () => {
+    if (!character || typeof character.chi !== 'number' || character.chi >= 3)
+      return;
+    const updated = {
+      ...character,
+      chi: Math.min(3, (character.chi ?? 0) + 1) as 0 | 1 | 2 | 3 | null,
+    };
+    updateCharacterInStorage(updated);
+  };
+
+  const handleDecrementChi = () => {
+    if (!character || typeof character.chi !== 'number') return;
+    const updated = {
+      ...character,
+      chi: Math.max(0, character.chi - 1) as 0 | 1 | 2 | 3 | null,
+    };
+    updateCharacterInStorage(updated);
+  };
+
+  const handleIncrementFavor = () => {
+    if (
+      !character ||
+      typeof character.favor !== 'number' ||
+      character.favor >= 3
+    )
+      return;
+    const updated = {
+      ...character,
+      favor: Math.min(3, (character.favor ?? 0) + 1) as
+        | 1
+        | 2
+        | 3
+        | 4
+        | 5
+        | 6
+        | 7
+        | 0
+        | null,
+    };
+    updateCharacterInStorage(updated);
+  };
+
+  const handleDecrementFavor = () => {
+    if (!character || typeof character.favor !== 'number') return;
+    const updated = {
+      ...character,
+      favor: Math.max(0, character.favor - 1) as
+        | 1
+        | 2
+        | 3
+        | 4
+        | 5
+        | 6
+        | 7
+        | 0
+        | null,
+    };
+    updateCharacterInStorage(updated);
+  };
+
+  const handleIncrementHealth = () => {
+    if (!character) return;
+    const updated = {
+      ...character,
+      currentHealth: Math.min(character.maxHealth, character.currentHealth + 1),
+    };
+    updateCharacterInStorage(updated);
+  };
+
+  const handleDecrementHealth = () => {
+    if (!character) return;
+    const updated = {
+      ...character,
+      currentHealth: Math.max(0, character.currentHealth - 1),
+    };
+    updateCharacterInStorage(updated);
+  };
+
+  const openMaxHealthBottomSheet = useCallback(() => {
+    maxHealthBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeMaxHealthBottomSheet = useCallback(() => {
+    maxHealthBottomSheetRef.current?.close();
+  }, []);
+
+  const handleIncrementMaxHealth = useCallback(() => {
+    if (!character) return;
+    const updated = {
+      ...character,
+      maxHealth: character.maxHealth + 1,
+      // Ensure currentHealth doesn't exceed new maxHealth
+      currentHealth: Math.min(character.currentHealth, character.maxHealth + 1),
+    };
+    updateCharacterInStorage(updated);
+  }, [character, updateCharacterInStorage]);
+
+  const handleDecrementMaxHealth = useCallback(() => {
+    if (!character) return;
+    const updated = {
+      ...character,
+      maxHealth: Math.max(1, character.maxHealth - 1),
+      // Ensure currentHealth doesn't exceed new maxHealth
+      currentHealth: Math.min(character.currentHealth, character.maxHealth - 1),
+    };
+    updateCharacterInStorage(updated);
+  }, [character, updateCharacterInStorage]);
+
+  const renderMaxHealthBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeMaxHealthBottomSheet}
+      />
+    ),
+    [closeMaxHealthBottomSheet]
+  );
+
+  const openLevelBottomSheet = useCallback(() => {
+    levelBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeLevelBottomSheet = useCallback(() => {
+    levelBottomSheetRef.current?.close();
+  }, []);
+
+  const handleIncrementLevel = useCallback(() => {
+    if (!character) return;
+    const updated = {
+      ...character,
+      level: character.level + 1,
+    };
+    updateCharacterInStorage(updated);
+  }, [character, updateCharacterInStorage]);
+
+  const handleDecrementLevel = useCallback(() => {
+    if (!character) return;
+    const updated = {
+      ...character,
+      level: Math.max(1, character.level - 1),
+    };
+    updateCharacterInStorage(updated);
+  }, [character, updateCharacterInStorage]);
+
+  const renderLevelBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeLevelBottomSheet}
+      />
+    ),
+    [closeLevelBottomSheet]
+  );
+
+  // Helper functions to convert between string format ("+X", "-X") and number
+  const parseStatValue = (value: string): number => {
+    if (value.startsWith('+')) {
+      return parseInt(value.substring(1), 10) || 0;
+    } else if (value.startsWith('-')) {
+      return parseInt(value, 10) || 0;
+    } else {
+      // Handle case where value might just be a number string
+      const parsed = parseInt(value, 10);
+      return isNaN(parsed) ? 0 : parsed;
+    }
+  };
+
+  const formatStatValue = (value: number): string => {
+    if (value >= 0) {
+      return `+${value}`;
+    } else {
+      return `${value}`;
+    }
+  };
+
+  const openAttackBottomSheet = useCallback(() => {
+    attackBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeAttackBottomSheet = useCallback(() => {
+    attackBottomSheetRef.current?.close();
+  }, []);
+
+  const handleIncrementAttack = useCallback(() => {
+    if (!character) return;
+    const currentValue = parseStatValue(character.attack);
+    const updated = {
+      ...character,
+      attack: formatStatValue(currentValue + 1),
+    };
+    updateCharacterInStorage(updated);
+  }, [character, updateCharacterInStorage]);
+
+  const handleDecrementAttack = useCallback(() => {
+    if (!character) return;
+    const currentValue = parseStatValue(character.attack);
+    const updated = {
+      ...character,
+      attack: formatStatValue(currentValue - 1),
+    };
+    updateCharacterInStorage(updated);
+  }, [character, updateCharacterInStorage]);
+
+  const renderAttackBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeAttackBottomSheet}
+      />
+    ),
+    [closeAttackBottomSheet]
+  );
+
+  const openDefenseBottomSheet = useCallback(() => {
+    defenseBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeDefenseBottomSheet = useCallback(() => {
+    defenseBottomSheetRef.current?.close();
+  }, []);
+
+  const handleIncrementDefense = useCallback(() => {
+    if (!character) return;
+    const currentValue = parseStatValue(character.defense);
+    const updated = {
+      ...character,
+      defense: formatStatValue(currentValue + 1),
+    };
+    updateCharacterInStorage(updated);
+  }, [character, updateCharacterInStorage]);
+
+  const handleDecrementDefense = useCallback(() => {
+    if (!character) return;
+    const currentValue = parseStatValue(character.defense);
+    const updated = {
+      ...character,
+      defense: formatStatValue(currentValue - 1),
+    };
+    updateCharacterInStorage(updated);
+  }, [character, updateCharacterInStorage]);
+
+  const renderDefenseBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeDefenseBottomSheet}
+      />
+    ),
+    [closeDefenseBottomSheet]
+  );
+
+  const openClassBottomSheet = useCallback(async () => {
+    setIsLoadingClasses(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${API_URL}/api/v1/classes`, {
+        headers: {
+          'x-api-key': API_KEY,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch classes: ${response.status} ${response.statusText}`
+        );
+      }
+
+      const classesData = await response.json();
+
+      if (!classesData || !classesData.classes) {
+        throw new Error('Invalid response format from classes endpoint');
+      }
+
+      setClasses(classesData.classes);
+      classBottomSheetRef.current?.snapToIndex(0);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'An unexpected error occurred';
+      setError(errorMessage);
+      console.error('Error fetching classes:', error);
+    } finally {
+      setIsLoadingClasses(false);
+    }
+  }, []);
+
+  const closeClassBottomSheet = useCallback(() => {
+    classBottomSheetRef.current?.close();
+  }, []);
+
+  const handleClassSelect = async (selectedClass: ClassType) => {
+    if (!character) return;
+
+    try {
+      const charactersJson = await AsyncStorage.getItem('characters');
+      if (!charactersJson) return;
+
+      const charactersArray: Character[] = JSON.parse(charactersJson);
+
+      // Find the matching class in the classes array
+      const matchingClass = classes.find(c => c.name === selectedClass.name);
+
+      if (!matchingClass) {
+        setError('Selected class not found in classes array');
+        return;
+      }
+
+      // Update the character with the new class
+      const updatedCharacter = {
+        ...character,
+        class: matchingClass,
+        chi: (matchingClass.name === 'Monk' ? 0 : null) as 0 | 1 | 2 | 3 | null,
+        favor: (matchingClass.name === 'Cleric' ? 0 : null) as
+          | 1
+          | 2
+          | 3
+          | 4
+          | 5
+          | 6
+          | 7
+          | 0
+          | null,
+      };
+      const updatedArray = charactersArray.map(char =>
+        char.id === character.id ? updatedCharacter : char
+      );
+
+      await AsyncStorage.setItem('characters', JSON.stringify(updatedArray));
+      setCharacter(updatedCharacter);
+      closeClassBottomSheet();
+    } catch (error) {
+      console.error('Error updating class:', error);
+      setError('Failed to update class');
+    }
+  };
+
+  const renderClassBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeClassBottomSheet}
+      />
+    ),
+    [closeClassBottomSheet]
+  );
+
+  const openDeleteConfirmation = useCallback(() => {
+    deleteConfirmationBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeDeleteConfirmation = useCallback(() => {
+    deleteConfirmationBottomSheetRef.current?.close();
+  }, []);
+
+  const handleDeleteCharacter = useCallback(async () => {
+    if (!character) return;
+
+    try {
+      const charactersJson = await AsyncStorage.getItem('characters');
+      if (charactersJson) {
+        const charactersArray: Character[] = JSON.parse(charactersJson);
+        // Remove the character that matches the one to delete
+        const updatedCharacters = charactersArray.filter(
+          char => char.id !== character.id
+        );
+
+        // Save updated array back to AsyncStorage
+        await AsyncStorage.setItem(
+          'characters',
+          JSON.stringify(updatedCharacters)
+        );
+      }
+      closeDeleteConfirmation();
+      // Navigate back to party screen
+      router.push('/(tabs)/party');
+    } catch (error) {
+      console.error('Error deleting character:', error);
+      setError('Failed to delete character');
+    }
+  }, [character, closeDeleteConfirmation, router]);
+
+  const renderDeleteConfirmationBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeDeleteConfirmation}
+      />
+    ),
+    [closeDeleteConfirmation]
+  );
+
+  const openStatusBottomSheet = useCallback(() => {
+    setStatusInput('');
+    statusBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeStatusBottomSheet = useCallback(() => {
+    statusBottomSheetRef.current?.close();
+    setStatusInput('');
+  }, []);
+
+  const handleAddStatus = useCallback(
+    async (statusOverride?: string) => {
+      const statusToAdd = statusOverride || statusInput.trim();
+      if (!character || !statusToAdd) return;
+
+      const trimmedStatus = statusToAdd.trim();
+      if (trimmedStatus.length === 0) return;
+
+      // Only check length limit if not using override (manual input)
+      if (!statusOverride && trimmedStatus.length > 20) return;
+
+      const currentStatuses = character.statuses || [];
+
+      // Check if status already exists
+      if (currentStatuses.includes(trimmedStatus)) {
+        closeStatusBottomSheet();
+        return;
+      }
+
+      try {
+        const updatedCharacter = {
+          ...character,
+          statuses: [...currentStatuses, trimmedStatus],
+        };
+        await updateCharacterInStorage(updatedCharacter);
+        closeStatusBottomSheet();
+      } catch (error) {
+        console.error('Error adding status:', error);
+        setError('Failed to add status');
+      }
+    },
+    [character, statusInput, updateCharacterInStorage, closeStatusBottomSheet]
+  );
+
+  const handleRemoveStatus = useCallback(
+    async (statusToRemove: string) => {
+      if (!character) return;
+
+      try {
+        const currentStatuses = character.statuses || [];
+        const updatedCharacter = {
+          ...character,
+          statuses: currentStatuses.filter(status => status !== statusToRemove),
+        };
+        await updateCharacterInStorage(updatedCharacter);
+      } catch (error) {
+        console.error('Error removing status:', error);
+        setError('Failed to remove status');
+      }
+    },
+    [character, updateCharacterInStorage]
+  );
+
+  const renderStatusBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeStatusBottomSheet}
+      />
+    ),
+    [closeStatusBottomSheet]
+  );
+
+  const openDeleteBackpackItemBottomSheet = useCallback((itemIndex: number) => {
+    setSelectedBackpackItemIndex(itemIndex);
+    deleteBackpackItemBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeDeleteBackpackItemBottomSheet = useCallback(() => {
+    deleteBackpackItemBottomSheetRef.current?.close();
+    setSelectedBackpackItemIndex(null);
+  }, []);
+
+  const handleDeleteBackpackItem = useCallback(async () => {
+    if (!character || selectedBackpackItemIndex === null) return;
+
+    try {
+      const updatedBackpack = character.backpack.filter(
+        (_, index) => index !== selectedBackpackItemIndex
+      );
+
+      const updatedCharacter = {
+        ...character,
+        backpack: updatedBackpack,
+      };
+
+      await updateCharacterInStorage(updatedCharacter);
+      closeDeleteBackpackItemBottomSheet();
+    } catch (error) {
+      console.error('Error deleting backpack item:', error);
+      setError('Failed to delete item');
+    }
+  }, [
+    character,
+    selectedBackpackItemIndex,
+    updateCharacterInStorage,
+    closeDeleteBackpackItemBottomSheet,
+  ]);
+
+  const handleUpdateBackpackItemQty = useCallback(
+    async (itemIndex: number, newQty: number) => {
+      if (!character || newQty < 0) return;
+
+      try {
+        const updatedBackpack = character.backpack.map((item, index) => {
+          if (index === itemIndex && 'qty' in item) {
+            return {
+              ...item,
+              qty: newQty,
+            };
+          }
+          return item;
+        });
+
+        const updatedCharacter = {
+          ...character,
+          backpack: updatedBackpack,
+        };
+
+        await updateCharacterInStorage(updatedCharacter);
+      } catch (error) {
+        console.error('Error updating backpack item qty:', error);
+        setError('Failed to update item quantity');
+      }
+    },
+    [character, updateCharacterInStorage]
+  );
+
+  const handleIncrementBackpackItemQty = useCallback(
+    (itemIndex: number) => {
+      if (!character) return;
+      const item = character.backpack[itemIndex];
+      if ('qty' in item && typeof item.qty === 'number') {
+        handleUpdateBackpackItemQty(itemIndex, item.qty + 1);
+      }
+    },
+    [character, handleUpdateBackpackItemQty]
+  );
+
+  const handleToggleLuniteShardEquipped = useCallback(
+    async (itemIndex: number, newEquippedState: boolean) => {
+      if (!character) return;
+
+      try {
+        const updatedBackpack = character.backpack.map((item, index) => {
+          if (index === itemIndex && 'isEquipped' in item) {
+            return {
+              ...item,
+              isEquipped: newEquippedState,
+            };
+          }
+          return item;
+        });
+
+        const updatedCharacter = {
+          ...character,
+          backpack: updatedBackpack,
+        };
+
+        await updateCharacterInStorage(updatedCharacter);
+      } catch (error) {
+        console.error('Error updating lunite shard equipped status:', error);
+        setError('Failed to update equipped status');
+      }
+    },
+    [character, updateCharacterInStorage]
+  );
+
+  const handleToggleWeaponOrShieldEquipped = useCallback(
+    async (itemIndex: number, newEquippedState: boolean) => {
+      if (!character) return;
+
+      try {
+        const updatedWeaponsAndShields = character.weaponsAndShield.map(
+          (item, index) => {
+            if (index === itemIndex) {
+              return {
+                ...item,
+                equipped: newEquippedState,
+              };
+            }
+            return item;
+          }
+        ) as typeof character.weaponsAndShield;
+
+        const updatedCharacter = {
+          ...character,
+          weaponsAndShield: updatedWeaponsAndShields,
+        };
+
+        await updateCharacterInStorage(updatedCharacter);
+      } catch (error) {
+        console.error('Error updating weapon/shield equipped status:', error);
+        setError('Failed to update equipped status');
+      }
+    },
+    [character, updateCharacterInStorage]
+  );
+
+  const handleUpdateWeaponCharge = useCallback(
+    async (itemIndex: number, newCharge: number) => {
+      if (!character) return;
+
+      try {
+        const updatedWeaponsAndShields = character.weaponsAndShield.map(
+          (item, index) => {
+            if (index === itemIndex && 'maxCharges' in item) {
+              const weapon = item as Weapon;
+              const maxCharges = weapon.maxCharges ?? 0;
+              const clampedCharge = Math.max(
+                0,
+                Math.min(newCharge, maxCharges)
+              ) as 0 | 1 | 2 | 3 | 4 | 5 | null;
+              return {
+                ...weapon,
+                currentCharge: clampedCharge,
+              };
+            }
+            return item;
+          }
+        ) as typeof character.weaponsAndShield;
+
+        const updatedCharacter = {
+          ...character,
+          weaponsAndShield: updatedWeaponsAndShields,
+        };
+
+        await updateCharacterInStorage(updatedCharacter);
+      } catch (error) {
+        console.error('Error updating weapon charge:', error);
+        setError('Failed to update weapon charge');
+      }
+    },
+    [character, updateCharacterInStorage]
+  );
+
+  const openDeleteWeaponOrShieldBottomSheet = useCallback(
+    (itemIndex: number) => {
+      setSelectedWeaponOrShieldIndex(itemIndex);
+      deleteWeaponOrShieldBottomSheetRef.current?.snapToIndex(0);
+    },
+    []
+  );
+
+  const closeDeleteWeaponOrShieldBottomSheet = useCallback(() => {
+    deleteWeaponOrShieldBottomSheetRef.current?.close();
+    setSelectedWeaponOrShieldIndex(null);
+  }, []);
+
+  const handleDeleteWeaponOrShield = useCallback(async () => {
+    if (!character || selectedWeaponOrShieldIndex === null) return;
+
+    try {
+      const updatedWeaponsAndShields = character.weaponsAndShield.filter(
+        (_, index) => index !== selectedWeaponOrShieldIndex
+      ) as typeof character.weaponsAndShield;
+
+      const updatedCharacter = {
+        ...character,
+        weaponsAndShield: updatedWeaponsAndShields,
+      };
+
+      await updateCharacterInStorage(updatedCharacter);
+      closeDeleteWeaponOrShieldBottomSheet();
+    } catch (error) {
+      console.error('Error deleting weapon/shield:', error);
+      setError('Failed to delete weapon/shield');
+    }
+  }, [
+    character,
+    selectedWeaponOrShieldIndex,
+    updateCharacterInStorage,
+    closeDeleteWeaponOrShieldBottomSheet,
+  ]);
+
+  const renderDeleteWeaponOrShieldBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeDeleteWeaponOrShieldBottomSheet}
+      />
+    ),
+    [closeDeleteWeaponOrShieldBottomSheet]
+  );
+
+  const openDeleteGuildPerkBottomSheet = useCallback(() => {
+    deleteGuildPerkBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeDeleteGuildPerkBottomSheet = useCallback(() => {
+    deleteGuildPerkBottomSheetRef.current?.close();
+  }, []);
+
+  const handleDeleteGuildPerk = useCallback(async () => {
+    if (!character) return;
+
+    try {
+      const updatedCharacter = {
+        ...character,
+        guildPerk: null,
+      };
+
+      await updateCharacterInStorage(updatedCharacter);
+      closeDeleteGuildPerkBottomSheet();
+    } catch (error) {
+      console.error('Error deleting guild perk:', error);
+      setError('Failed to delete guild perk');
+    }
+  }, [character, updateCharacterInStorage, closeDeleteGuildPerkBottomSheet]);
+
+  const renderDeleteGuildPerkBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeDeleteGuildPerkBottomSheet}
+      />
+    ),
+    [closeDeleteGuildPerkBottomSheet]
+  );
+
+  const openDeleteTitleBottomSheet = useCallback((title: Title) => {
+    setSelectedTitleForDeletion(title);
+    deleteTitleBottomSheetRef.current?.snapToIndex(0);
+  }, []);
+
+  const closeDeleteTitleBottomSheet = useCallback(() => {
+    deleteTitleBottomSheetRef.current?.close();
+    setSelectedTitleForDeletion(null);
+  }, []);
+
+  const handleDeleteTitle = useCallback(async () => {
+    if (!character || selectedTitleForDeletion === null) return;
+
+    try {
+      // Find and remove the title that matches both source and titleName
+      const updatedTitles = (character.titles || []).filter(
+        title =>
+          !(
+            title.source === selectedTitleForDeletion.source &&
+            title.titleName === selectedTitleForDeletion.titleName
+          )
+      );
+
+      const updatedCharacter = {
+        ...character,
+        titles: updatedTitles,
+      };
+
+      await updateCharacterInStorage(updatedCharacter);
+      closeDeleteTitleBottomSheet();
+    } catch (error) {
+      console.error('Error deleting title:', error);
+      setError('Failed to delete title');
+    }
+  }, [
+    character,
+    selectedTitleForDeletion,
+    updateCharacterInStorage,
+    closeDeleteTitleBottomSheet,
+  ]);
+
+  const renderDeleteTitleBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeDeleteTitleBottomSheet}
+      />
+    ),
+    [closeDeleteTitleBottomSheet]
+  );
+
+  const handleDecrementBackpackItemQty = useCallback(
+    async (itemIndex: number) => {
+      if (!character) return;
+      const item = character.backpack[itemIndex];
+      if ('qty' in item && typeof item.qty === 'number' && item.qty > 0) {
+        const newQty = item.qty - 1;
+
+        // If quantity would be 0 or less, remove the item from backpack
+        if (newQty <= 0) {
+          try {
+            const updatedBackpack = character.backpack.filter(
+              (_, index) => index !== itemIndex
+            );
+
+            const updatedCharacter = {
+              ...character,
+              backpack: updatedBackpack,
+            };
+
+            await updateCharacterInStorage(updatedCharacter);
+          } catch (error) {
+            console.error('Error removing backpack item:', error);
+            setError('Failed to remove item');
+          }
+        } else {
+          // Otherwise, just update the quantity
+          handleUpdateBackpackItemQty(itemIndex, newQty);
+        }
+      }
+    },
+    [character, updateCharacterInStorage, handleUpdateBackpackItemQty]
+  );
+
+  const renderDeleteBackpackItemBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        onPress={closeDeleteBackpackItemBottomSheet}
+      />
+    ),
+    [closeDeleteBackpackItemBottomSheet]
+  );
+
+  return (
+    <LinearGradient
+      colors={colors.backgroundGradient as [string, string, ...string[]]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.container}
+    >
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+          activeOpacity={0.7}
+        >
+          <IconSymbol name="chevron.left" size={24} color={colors.text} />
+        </TouchableOpacity>
+        <Text style={styles.title}>
+          {character?.name || 'Character Details'}
+        </Text>
+        <View style={styles.placeholder} />
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          isTablet && styles.scrollContentTablet,
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        <View
+          style={[
+            styles.contentWrapper,
+            isTablet && styles.contentWrapperTablet,
+          ]}
+        >
+          <View style={styles.headerSection}>
+            <View style={styles.rollButtonsContainer}>
+              <DefendRoll />
+              <RollSelector />
+            </View>
+          </View>
+
+          {character && (
+            <View style={styles.titleSection}>
+              <Text style={styles.titleText}>
+                {character.name} - {character.race.name} {character.class.name}
+              </Text>
+            </View>
+          )}
+
+          <View style={styles.content}>
+            {isLoading || isLoadingClasses ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.accent} />
+                <Text style={styles.loadingText}>
+                  {isLoading ? 'Loading character...' : 'Loading classes...'}
+                </Text>
+              </View>
+            ) : error ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorIcon}>⚠️</Text>
+                <Text style={styles.errorTitle}>Error</Text>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : character ? (
+              <View style={styles.characterCard}>
+                <View
+                  style={[
+                    styles.infoContainer,
+                    isTablet && styles.infoContainerTablet,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.infoColumn,
+                      isTablet && styles.infoColumnTablet,
+                    ]}
+                  >
+                    <View style={styles.infoRow}>
+                      <Text style={styles.label}>Race:</Text>
+                      <Text style={styles.value}>{character.race.name}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.infoRow}
+                      onPress={openClassBottomSheet}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.label}>Class:</Text>
+                      <Text style={styles.value}>{character.class.name}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.infoRow}
+                      onPress={openLevelBottomSheet}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.label}>Level:</Text>
+                      <Text style={styles.value}>{character.level}</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.sectionContainer,
+                      isTablet && styles.sectionContainerTablet,
+                    ]}
+                  >
+                    <View
+                      style={[styles.section, isTablet && styles.sectionTablet]}
+                    >
+                      <TouchableOpacity
+                        style={styles.infoRow}
+                        onPress={openAttackBottomSheet}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.label}>Attack:</Text>
+                        <Text style={styles.value}>{character.attack}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.infoRow}
+                        onPress={openDefenseBottomSheet}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.label}>Defense:</Text>
+                        <Text style={styles.value}>{character.defense}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.infoRow}
+                        onPress={openPositionBottomSheet}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.label}>Position:</Text>
+                        <Text style={styles.value}>
+                          {character.position !== null
+                            ? character.position
+                            : 'N/A'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.statusesSection}>
+                  <View style={styles.statusesHeader}>
+                    <Text style={styles.statusesLabel}>Status: </Text>
+                    <TouchableOpacity
+                      onPress={openStatusBottomSheet}
+                      style={styles.addStatusButton}
+                      activeOpacity={0.7}
+                    >
+                      <IconSymbol
+                        name="plus"
+                        size={20}
+                        color={Colors.dark.text}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {character.statuses && character.statuses.length > 0 ? (
+                    <View style={styles.statusesContainer}>
+                      {character.statuses.map((status, index) => (
+                        <View key={index} style={styles.statusPill}>
+                          <Text style={styles.statusPillText}>{status}</Text>
+                          <TouchableOpacity
+                            onPress={() => handleRemoveStatus(status)}
+                            style={styles.statusPillRemove}
+                            activeOpacity={0.7}
+                          >
+                            <IconSymbol
+                              name="xmark"
+                              size={16}
+                              color={Colors.dark.textSecondary}
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={styles.noStatusesText}>
+                      No current status effects
+                    </Text>
+                  )}
+                </View>
+
+                <View style={styles.counterSection}>
+                  <View
+                    style={[
+                      styles.counterRowContainer,
+                      isTablet && styles.counterRowContainerTablet,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.counterRow,
+                        isTablet && styles.counterRowTablet,
+                      ]}
+                    >
+                      <TouchableOpacity
+                        onLongPress={openMaxHealthBottomSheet}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.counterLabel}>Health: </Text>
+                      </TouchableOpacity>
+                      <View style={styles.counterControls}>
+                        <TouchableOpacity
+                          onPress={handleDecrementHealth}
+                          style={styles.smallCounterButton}
+                          activeOpacity={0.7}
+                        >
+                          <IconSymbol
+                            name="minus"
+                            size={17}
+                            color={Colors.dark.text}
+                          />
+                        </TouchableOpacity>
+                        <Text style={styles.counterValue}>
+                          {character.currentHealth} / {character.maxHealth}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={handleIncrementHealth}
+                          style={styles.smallCounterButton}
+                          activeOpacity={0.7}
+                        >
+                          <IconSymbol
+                            name="plus"
+                            size={17}
+                            color={Colors.dark.text}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.counterRow,
+                        isTablet && styles.counterRowTablet,
+                      ]}
+                    >
+                      <Text style={styles.counterLabel}>Surges: </Text>
+                      <View style={styles.counterControls}>
+                        <TouchableOpacity
+                          onPress={handleDecrementSurges}
+                          style={styles.smallCounterButton}
+                          activeOpacity={0.7}
+                        >
+                          <IconSymbol
+                            name="minus"
+                            size={17}
+                            color={Colors.dark.text}
+                          />
+                        </TouchableOpacity>
+                        <Text style={styles.counterValue}>
+                          {character.surges !== null ? character.surges : 'N/A'}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={handleIncrementSurges}
+                          style={styles.smallCounterButton}
+                          activeOpacity={0.7}
+                        >
+                          <IconSymbol
+                            name="plus"
+                            size={17}
+                            color={Colors.dark.text}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.counterRow,
+                        isTablet && styles.counterRowTablet,
+                      ]}
+                    >
+                      <Text style={styles.counterLabel}>Glowstone: </Text>
+                      <View style={styles.counterControls}>
+                        <TouchableOpacity
+                          onPress={handleDecrementGlowstone}
+                          style={styles.smallCounterButton}
+                          activeOpacity={0.7}
+                        >
+                          <IconSymbol
+                            name="minus"
+                            size={17}
+                            color={Colors.dark.text}
+                          />
+                        </TouchableOpacity>
+                        <Text style={styles.counterValue}>
+                          {character.glowstone}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={handleIncrementGlowstone}
+                          style={styles.smallCounterButton}
+                          activeOpacity={0.7}
+                        >
+                          <IconSymbol
+                            name="plus"
+                            size={17}
+                            color={Colors.dark.text}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.counterRow,
+                        isTablet && styles.counterRowTablet,
+                      ]}
+                    >
+                      <Text style={styles.counterLabel}>Essence: </Text>
+                      <View style={styles.counterControls}>
+                        <TouchableOpacity
+                          onPress={handleDecrementEssence}
+                          style={styles.smallCounterButton}
+                          activeOpacity={0.7}
+                        >
+                          <IconSymbol
+                            name="minus"
+                            size={17}
+                            color={Colors.dark.text}
+                          />
+                        </TouchableOpacity>
+                        <Text style={styles.counterValue}>
+                          {character.essence}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={handleIncrementEssence}
+                          style={styles.smallCounterButton}
+                          activeOpacity={0.7}
+                        >
+                          <IconSymbol
+                            name="plus"
+                            size={17}
+                            color={Colors.dark.text}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {character.class.name === 'Monk' &&
+                      typeof character.chi === 'number' && (
+                        <View
+                          style={[
+                            styles.counterRow,
+                            isTablet && styles.counterRowTablet,
+                          ]}
+                        >
+                          <Text style={styles.counterLabel}>Chi: </Text>
+                          <View style={styles.counterControls}>
+                            <TouchableOpacity
+                              onPress={handleDecrementChi}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="minus"
+                                size={17}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
+                            <Text style={styles.counterValue}>
+                              {character.chi}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={handleIncrementChi}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="plus"
+                                size={17}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      )}
+
+                    {character.class.name === 'Cleric' &&
+                      typeof character.favor === 'number' && (
+                        <View
+                          style={[
+                            styles.counterRow,
+                            isTablet && styles.counterRowTablet,
+                          ]}
+                        >
+                          <Text style={styles.counterLabel}>Favor: </Text>
+                          <View style={styles.counterControls}>
+                            <TouchableOpacity
+                              onPress={handleDecrementFavor}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="minus"
+                                size={17}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
+                            <Text style={styles.counterValue}>
+                              {character.favor}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={handleIncrementFavor}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="plus"
+                                size={17}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      )}
+                  </View>
+                </View>
+
+                <View style={styles.abilitySection}>
+                  <Text style={styles.abilityText}>
+                    <Text style={styles.abilityLabel}>Racial Ability: </Text>
+                    <Text style={styles.abilityName}>
+                      {character.race.racialAbility.name}
+                    </Text>
+                    <Text style={styles.abilityValue}>
+                      {' '}
+                      - {character.race.racialAbility.ability}
+                    </Text>
+                  </Text>
+                </View>
+
+                <View style={styles.abilitySection}>
+                  <Text style={styles.abilityText}>
+                    <Text style={styles.abilityLabel}>Class Ability: </Text>
+                    <Text style={styles.abilityName}>
+                      {character.class.classAbility.name}
+                    </Text>
+                    <Text style={styles.abilityValue}>
+                      {' '}
+                      - {character.class.classAbility.ability}
+                    </Text>
+                  </Text>
+                </View>
+
+                <View style={styles.abilitySection}>
+                  <Text style={styles.abilityText}>
+                    <Text style={styles.abilityLabel}>Class Passive: </Text>
+                    <Text style={styles.abilityValue}>
+                      {character.class.classPassive}
+                    </Text>
+                  </Text>
+                </View>
+
+                <View style={styles.guildPerksSection}>
+                  <View style={styles.guildPerksHeader}>
+                    <Text style={styles.guildPerksLabel}>Guild Perk</Text>
+                    {!character.guildPerk ? (
+                      <TouchableOpacity
+                        onPress={() => {
+                          if (character?.id) {
+                            router.push({
+                              pathname: '/AddGuildPerk' as any,
+                              params: { characterId: character.id },
+                            });
+                          }
+                        }}
+                        style={styles.addGuildPerkButton}
+                        activeOpacity={0.7}
+                      >
+                        <IconSymbol
+                          name="plus"
+                          size={20}
+                          color={Colors.dark.text}
+                        />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                  {character.guildPerk &&
+                  character.guildPerk.guild &&
+                  character.guildPerk.perk ? (
+                    <TouchableOpacity
+                      style={styles.guildPerkContainer}
+                      onLongPress={openDeleteGuildPerkBottomSheet}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.guildPerkGuildText}>
+                        {character.guildPerk.guild.charAt(0).toUpperCase() +
+                          character.guildPerk.guild.slice(1)}{' '}
+                        Guild
+                      </Text>
+                      <Text style={styles.guildPerkText}>
+                        {character.guildPerk.perk}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={styles.emptyGuildPerkContainer}>
+                      <Text style={styles.emptyGuildPerkText}>
+                        No current active Guild Perk.
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.weaponsAndShieldsSection}>
+                  <View style={styles.weaponsAndShieldsHeader}>
+                    <Text style={styles.weaponsAndShieldsLabel}>
+                      Weapons & Shields
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (character?.id) {
+                          router.push({
+                            pathname: '/AddWeaponOrShield' as any,
+                            params: { characterId: character.id },
+                          });
+                        }
+                      }}
+                      style={[
+                        styles.addWeaponOrShieldButton,
+                        (character?.weaponsAndShield?.length ?? 0) >= 4 &&
+                          styles.addWeaponOrShieldButtonDisabled,
+                      ]}
+                      activeOpacity={0.7}
+                      disabled={(character?.weaponsAndShield?.length ?? 0) >= 4}
+                    >
+                      <IconSymbol
+                        name="plus"
+                        size={20}
+                        color={
+                          (character?.weaponsAndShield?.length ?? 0) >= 4
+                            ? Colors.dark.textTertiary
+                            : Colors.dark.text
+                        }
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {character.weaponsAndShield &&
+                  character.weaponsAndShield.length > 0 ? (
+                    <View style={styles.weaponsAndShieldsContainer}>
+                      {character.weaponsAndShield.map((item, index) => {
+                        // Check if there's a two-handed weapon that's equipped
+                        const hasEquippedTwoHandedWeapon =
+                          character.weaponsAndShield.some(
+                            w =>
+                              'handed' in w &&
+                              w.handed === 2 &&
+                              w.equipped === true
+                          );
+
+                        // Count equipped weapons/shields
+                        const equippedWeaponsAndShieldsCount =
+                          character.weaponsAndShield.filter(
+                            w => w.equipped === true
+                          ).length;
+
+                        // Check if this is a shield
+                        const isShield = !('type' in item);
+
+                        // Check if character is Berserker
+                        const isBerserker =
+                          character.class.name === 'Berserker';
+
+                        // If this is a two-handed weapon, check if any other items are equipped
+                        // Allow toggling if this two-handed weapon is already equipped
+                        const isTwoHandedWeapon =
+                          'handed' in item && item.handed === 2;
+
+                        // Check if this specific two-handed weapon is already equipped
+                        const isThisTwoHandedWeaponEquipped =
+                          isTwoHandedWeapon && item.equipped === true;
+
+                        // If this is a two-handed weapon that's NOT equipped, check if any other items are equipped
+                        const hasOtherEquippedItems =
+                          isTwoHandedWeapon && !isThisTwoHandedWeaponEquipped
+                            ? character.weaponsAndShield.some(
+                                (w, i) => i !== index && w.equipped === true
+                              )
+                            : false;
+
+                        // Checkbox is enabled if:
+                        // - Character is Berserker and this is a shield: disabled
+                        // - Character is Berserker: allow equipping two-handed weapons even if other items are equipped (max 2 total)
+                        // - This is a two-handed weapon that's already equipped: allow toggling
+                        // - This is a two-handed weapon and other non-two-handed items are equipped: disabled (unless Berserker)
+                        // - There's a two-handed weapon equipped (and this isn't it): only allow unchecking existing equipped items
+                        // - There are 2 equipped items: only allow unchecking existing equipped items
+                        // - Otherwise: enable the checkbox
+                        const canToggleEquipped =
+                          isBerserker && isShield
+                            ? false
+                            : isBerserker
+                              ? equippedWeaponsAndShieldsCount >= 2
+                                ? item.equipped === true
+                                : true
+                              : isThisTwoHandedWeaponEquipped
+                                ? true
+                                : hasOtherEquippedItems
+                                  ? false
+                                  : hasEquippedTwoHandedWeapon
+                                    ? item.equipped === true
+                                    : equippedWeaponsAndShieldsCount >= 2
+                                      ? item.equipped === true
+                                      : true;
+
+                        return (
+                          <View
+                            key={index}
+                            style={styles.weaponOrShieldItemContainer}
+                          >
+                            <TouchableOpacity
+                              style={styles.weaponOrShieldItem}
+                              onLongPress={() =>
+                                openDeleteWeaponOrShieldBottomSheet(index)
+                              }
+                              activeOpacity={0.7}
+                            >
+                              <View style={styles.weaponOrShieldItemContent}>
+                                <View style={styles.weaponOrShieldItemHeader}>
+                                  <Text style={styles.weaponOrShieldItemName}>
+                                    {item.name}
+                                  </Text>
+                                  {'type' in item && (
+                                    <View style={styles.weaponBadge}>
+                                      <Text style={styles.weaponBadgeText}>
+                                        {item.type === 'melee'
+                                          ? 'Melee'
+                                          : item.type === 'ranged'
+                                            ? 'Ranged'
+                                            : 'Arcane'}
+                                      </Text>
+                                    </View>
+                                  )}
+                                  {!('type' in item) && (
+                                    <View style={styles.shieldBadge}>
+                                      <Text style={styles.shieldBadgeText}>
+                                        Shield
+                                      </Text>
+                                    </View>
+                                  )}
+                                </View>
+                                {'handed' in item && (
+                                  <Text style={styles.weaponOrShieldItemMeta}>
+                                    {item.handed === 1
+                                      ? 'One-Handed'
+                                      : 'Two-Handed'}
+                                  </Text>
+                                )}
+                                {(item.ability ||
+                                  ('abilityName' in item &&
+                                    item.abilityName)) && (
+                                  <Text
+                                    style={styles.weaponOrShieldItemDescription}
+                                  >
+                                    {'abilityName' in item &&
+                                      item.abilityName && (
+                                        <Text style={styles.weaponAbilityName}>
+                                          {item.abilityName}
+                                        </Text>
+                                      )}
+                                    {'abilityName' in item &&
+                                      item.abilityName &&
+                                      (item.ability || 'actionType' in item) &&
+                                      ' - '}
+                                    {'actionType' in item &&
+                                      item.actionType &&
+                                      typeof item.actionType === 'string' && (
+                                        <Text>
+                                          Spend a{' '}
+                                          {item.actionType
+                                            .charAt(0)
+                                            .toUpperCase() +
+                                            item.actionType.slice(1)}
+                                          .{' '}
+                                        </Text>
+                                      )}
+
+                                    <Text>{item.ability}</Text>
+                                  </Text>
+                                )}
+                                <View style={styles.weaponOrShieldBottomRow}>
+                                  <TouchableOpacity
+                                    style={styles.equippedCheckboxContainer}
+                                    onPress={() => {
+                                      if (canToggleEquipped) {
+                                        handleToggleWeaponOrShieldEquipped(
+                                          index,
+                                          !item.equipped
+                                        );
+                                      }
+                                    }}
+                                    disabled={!canToggleEquipped}
+                                    activeOpacity={0.7}
+                                  >
+                                    <View
+                                      style={[
+                                        styles.checkboxBox,
+                                        item.equipped &&
+                                          styles.checkboxBoxChecked,
+                                        !canToggleEquipped &&
+                                          styles.checkboxBoxDisabled,
+                                      ]}
+                                    >
+                                      {item.equipped && (
+                                        <IconSymbol
+                                          name="checkmark"
+                                          size={16}
+                                          color={Colors.dark.text}
+                                        />
+                                      )}
+                                    </View>
+                                    <Text
+                                      style={[
+                                        styles.checkboxLabel,
+                                        !canToggleEquipped &&
+                                          styles.checkboxLabelDisabled,
+                                      ]}
+                                    >
+                                      Equipped
+                                    </Text>
+                                  </TouchableOpacity>
+                                  {'maxCharges' in item &&
+                                    item.maxCharges !== null && (
+                                      <View
+                                        style={styles.weaponChargesContainer}
+                                      >
+                                        <Text style={styles.weaponChargesLabel}>
+                                          Weapon Charges:
+                                        </Text>
+                                        <View
+                                          style={styles.weaponChargesControls}
+                                        >
+                                          <TouchableOpacity
+                                            style={styles.weaponChargesButton}
+                                            onPress={() => {
+                                              const weapon = item as Weapon;
+                                              handleUpdateWeaponCharge(
+                                                index,
+                                                (weapon.currentCharge ?? 0) - 1
+                                              );
+                                            }}
+                                            disabled={
+                                              (item as Weapon).currentCharge ===
+                                                null ||
+                                              ((item as Weapon).currentCharge ??
+                                                0) === 0
+                                            }
+                                            activeOpacity={0.7}
+                                          >
+                                            <IconSymbol
+                                              name="minus"
+                                              size={16}
+                                              color={
+                                                (item as Weapon)
+                                                  .currentCharge === null ||
+                                                ((item as Weapon)
+                                                  .currentCharge ?? 0) === 0
+                                                  ? Colors.dark.textTertiary
+                                                  : Colors.dark.text
+                                              }
+                                            />
+                                          </TouchableOpacity>
+                                          <Text
+                                            style={styles.weaponChargesValue}
+                                          >
+                                            {(item as Weapon).currentCharge ??
+                                              0}
+                                            /{item.maxCharges}
+                                          </Text>
+                                          <TouchableOpacity
+                                            style={styles.weaponChargesButton}
+                                            onPress={() => {
+                                              const weapon = item as Weapon;
+                                              handleUpdateWeaponCharge(
+                                                index,
+                                                (weapon.currentCharge ?? 0) + 1
+                                              );
+                                            }}
+                                            disabled={
+                                              (item as Weapon).currentCharge ===
+                                                null ||
+                                              ((item as Weapon).currentCharge ??
+                                                0) >= item.maxCharges
+                                            }
+                                            activeOpacity={0.7}
+                                          >
+                                            <IconSymbol
+                                              name="plus"
+                                              size={16}
+                                              color={
+                                                (item as Weapon)
+                                                  .currentCharge === null ||
+                                                ((item as Weapon)
+                                                  .currentCharge ?? 0) >=
+                                                  item.maxCharges
+                                                  ? Colors.dark.textTertiary
+                                                  : Colors.dark.text
+                                              }
+                                            />
+                                          </TouchableOpacity>
+                                        </View>
+                                      </View>
+                                    )}
+                                </View>
+                              </View>
+                            </TouchableOpacity>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  ) : (
+                    <View style={styles.emptyWeaponsAndShieldsContainer}>
+                      <Text style={styles.emptyWeaponsAndShieldsText}>
+                        No weapons or shields
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.backpackSection}>
+                  <View style={styles.backpackHeader}>
+                    <Text style={styles.backpackLabel}>Backpack</Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (character?.id) {
+                          router.push({
+                            pathname: '/AddItem' as any,
+                            params: { characterId: character.id },
+                          });
+                        }
+                      }}
+                      style={[
+                        styles.addBackpackItemButton,
+                        character?.backpack?.length === 10 &&
+                          styles.addBackpackItemButtonDisabled,
+                      ]}
+                      activeOpacity={0.7}
+                      disabled={character?.backpack?.length === 10}
+                    >
+                      <IconSymbol
+                        name="plus"
+                        size={20}
+                        color={
+                          character?.backpack?.length === 10
+                            ? Colors.dark.textTertiary
+                            : Colors.dark.text
+                        }
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {character.backpack && character?.backpack?.length > 0 ? (
+                    <View style={styles.backpackContainer}>
+                      {character.backpack
+                        .map((item, originalIndex) => ({
+                          item,
+                          originalIndex,
+                        }))
+                        .sort((a, b) => {
+                          const aIsLuniteShard =
+                            'action' in a.item && 'stacking' in a.item;
+                          const bIsLuniteShard =
+                            'action' in b.item && 'stacking' in b.item;
+                          // LuniteShards come first (return -1), regular items come after (return 1)
+                          if (aIsLuniteShard && !bIsLuniteShard) return -1;
+                          if (!aIsLuniteShard && bIsLuniteShard) return 1;
+                          return 0; // Keep original order for items of the same type
+                        })
+                        .map(({ item, originalIndex }, displayIndex) => {
+                          const isLuniteShard =
+                            'action' in item && 'stacking' in item;
+                          const isRegularItem =
+                            'description' in item && 'stackable' in item;
+
+                          // Count equipped Lunite Shards (only items with isEquipped property, which are Lunite Shards)
+                          const equippedLuniteShardsCount =
+                            character.backpack.filter(
+                              backpackItem =>
+                                'isEquipped' in backpackItem &&
+                                'action' in backpackItem &&
+                                'stacking' in backpackItem &&
+                                backpackItem.isEquipped === true
+                            ).length;
+
+                          // Checkbox is enabled if less than 2 equipped shards, or if this item is already equipped (to allow unchecking)
+                          const canToggleEquipped =
+                            isLuniteShard &&
+                            item.isEquipped !== null &&
+                            (equippedLuniteShardsCount < 2 ||
+                              item.isEquipped === true);
+
+                          const showQtyControls =
+                            isRegularItem &&
+                            item.stackable &&
+                            item.qty !== undefined &&
+                            item.qty >= 1;
+
+                          return (
+                            <View
+                              key={originalIndex}
+                              style={styles.backpackItemContainer}
+                            >
+                              <TouchableOpacity
+                                style={styles.backpackItem}
+                                onLongPress={() =>
+                                  openDeleteBackpackItemBottomSheet(
+                                    originalIndex
+                                  )
+                                }
+                                activeOpacity={0.7}
+                              >
+                                <View style={styles.backpackItemContent}>
+                                  <View style={styles.backpackItemHeader}>
+                                    {isRegularItem ? (
+                                      <Text style={styles.backpackItemName}>
+                                        {item.name}
+                                        {item.qty && item.stackable
+                                          ? ` x${item.qty}`
+                                          : ''}
+                                      </Text>
+                                    ) : (
+                                      <Text style={styles.backpackItemName}>
+                                        {item.name}{' '}
+                                        <Text
+                                          style={{
+                                            ...styles.backpackItemMetaText,
+                                            paddingLeft: 8,
+                                          }}
+                                        >
+                                          - {item.stacking}
+                                        </Text>
+                                      </Text>
+                                    )}
+
+                                    {isLuniteShard && (
+                                      <View style={styles.luniteShardBadge}>
+                                        <Text
+                                          style={styles.luniteShardBadgeText}
+                                        >
+                                          Lunite Shard
+                                        </Text>
+                                      </View>
+                                    )}
+                                  </View>
+
+                                  {isRegularItem && (
+                                    <>
+                                      <Text
+                                        style={styles.backpackItemDescription}
+                                      >
+                                        {item.description}
+                                      </Text>
+                                      <View style={styles.backpackItemMeta}>
+                                        <Text
+                                          style={styles.backpackItemMetaText}
+                                        >
+                                          {item.stackable
+                                            ? 'Stackable'
+                                            : 'Not Stackable'}
+                                        </Text>
+                                      </View>
+                                    </>
+                                  )}
+
+                                  {isLuniteShard && (
+                                    <>
+                                      <Text
+                                        style={styles.backpackItemDescription}
+                                      >
+                                        {item.action}
+                                      </Text>
+                                      {item.isEquipped !== null && (
+                                        <TouchableOpacity
+                                          style={
+                                            styles.equippedCheckboxContainer
+                                          }
+                                          onPress={() => {
+                                            if (canToggleEquipped) {
+                                              handleToggleLuniteShardEquipped(
+                                                originalIndex,
+                                                !item.isEquipped
+                                              );
+                                            }
+                                          }}
+                                          disabled={!canToggleEquipped}
+                                          activeOpacity={0.7}
+                                        >
+                                          <View
+                                            style={[
+                                              styles.checkboxBox,
+                                              item.isEquipped &&
+                                                styles.checkboxBoxChecked,
+                                              !canToggleEquipped &&
+                                                styles.checkboxBoxDisabled,
+                                            ]}
+                                          >
+                                            {item.isEquipped && (
+                                              <IconSymbol
+                                                name="checkmark"
+                                                size={16}
+                                                color={Colors.dark.text}
+                                              />
+                                            )}
+                                          </View>
+                                          <Text
+                                            style={[
+                                              styles.checkboxLabel,
+                                              !canToggleEquipped &&
+                                                styles.checkboxLabelDisabled,
+                                            ]}
+                                          >
+                                            Equipped
+                                          </Text>
+                                        </TouchableOpacity>
+                                      )}
+                                    </>
+                                  )}
+                                </View>
+                              </TouchableOpacity>
+
+                              {showQtyControls && (
+                                <View style={styles.backpackItemQtyControls}>
+                                  <TouchableOpacity
+                                    style={styles.qtyButton}
+                                    onPress={() =>
+                                      handleIncrementBackpackItemQty(
+                                        originalIndex
+                                      )
+                                    }
+                                    activeOpacity={0.7}
+                                  >
+                                    <IconSymbol
+                                      name="plus"
+                                      size={16}
+                                      color={Colors.dark.text}
+                                    />
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    style={styles.qtyButton}
+                                    onPress={() =>
+                                      handleDecrementBackpackItemQty(
+                                        originalIndex
+                                      )
+                                    }
+                                    activeOpacity={0.7}
+                                    disabled={
+                                      item.qty === undefined || item.qty <= 0
+                                    }
+                                  >
+                                    <IconSymbol
+                                      name="minus"
+                                      size={16}
+                                      color={
+                                        item.qty !== undefined && item.qty > 0
+                                          ? Colors.dark.text
+                                          : Colors.dark.textTertiary
+                                      }
+                                    />
+                                  </TouchableOpacity>
+                                </View>
+                              )}
+                            </View>
+                          );
+                        })}
+                    </View>
+                  ) : (
+                    <View style={styles.emptyBackpackContainer}>
+                      <Text style={styles.emptyBackpackText}>
+                        No items in backpack
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.titlesSection}>
+                  <View style={styles.titlesHeader}>
+                    <Text style={styles.titlesLabel}>Titles</Text>
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (character?.id) {
+                          router.push({
+                            pathname: '/AddTitle' as any,
+                            params: { characterId: character.id },
+                          });
+                        }
+                      }}
+                      style={styles.addTitleButton}
+                      activeOpacity={0.7}
+                    >
+                      <IconSymbol
+                        name="plus"
+                        size={20}
+                        color={Colors.dark.text}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {character.titles && character.titles.length > 0 ? (
+                    <View style={styles.titlesContainer}>
+                      {(() => {
+                        // Group titles by source
+                        const titlesBySource: Record<string, Title[]> = {};
+                        (character.titles || []).forEach(title => {
+                          if (!titlesBySource[title.source]) {
+                            titlesBySource[title.source] = [];
+                          }
+                          titlesBySource[title.source].push(title);
+                        });
+
+                        // Render each source group
+                        return Object.entries(titlesBySource).map(
+                          ([source, titles]) => (
+                            <View key={source} style={styles.titleSourceGroup}>
+                              <Text style={styles.titleSourceLabel}>
+                                {source}
+                              </Text>
+                              {titles.map((title, index) => (
+                                <TouchableOpacity
+                                  key={`${source}-${index}`}
+                                  style={styles.titleItem}
+                                  onLongPress={() =>
+                                    openDeleteTitleBottomSheet(title)
+                                  }
+                                  activeOpacity={0.7}
+                                >
+                                  <Text style={styles.titleItemText}>
+                                    {title.titleName}
+                                  </Text>
+                                </TouchableOpacity>
+                              ))}
+                            </View>
+                          )
+                        );
+                      })()}
+                    </View>
+                  ) : (
+                    <View style={styles.emptyTitlesContainer}>
+                      <Text style={styles.emptyTitlesText}>No titles</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            ) : null}
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Delete Character Button */}
+      {character && (
+        <View style={[styles.footer, isTablet && styles.footerTablet]}>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={openDeleteConfirmation}
+            activeOpacity={0.9}
+          >
+            <Text style={styles.deleteButtonText}>Delete Character</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Position Bottom Sheet */}
+      <BottomSheet
+        ref={positionBottomSheetRef}
+        index={-1}
+        snapPoints={positionSnapPoints}
+        enablePanDownToClose
+        enableContentPanningGesture={false}
+        backdropComponent={renderPositionBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <View style={styles.bottomSheetHeader}>
+            <Text style={styles.bottomSheetHeaderText}>Select Position</Text>
+            <TouchableOpacity
+              onPress={closePositionBottomSheet}
+              style={styles.closeButton}
+            >
+              <Text style={styles.closeButtonText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <BottomSheetScrollView
+            contentContainerStyle={styles.positionOptionsContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {([1, 2, 3, 4, null] as const).map(position => {
+              const isSelected = character?.position === position;
+              const displayText =
+                position !== null ? position.toString() : 'None';
+              return (
+                <TouchableOpacity
+                  key={position !== null ? position : 'none'}
+                  style={[
+                    styles.positionOption,
+                    isSelected && styles.positionOptionSelected,
+                  ]}
+                  onPress={() => handlePositionSelect(position)}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.positionOptionText,
+                      isSelected && styles.positionOptionTextSelected,
+                    ]}
+                  >
+                    {displayText}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </BottomSheetScrollView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Max Health Bottom Sheet */}
+      <BottomSheet
+        ref={maxHealthBottomSheetRef}
+        index={-1}
+        snapPoints={maxHealthSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderMaxHealthBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>
+                {character ? `${character.name}'s Max Health` : 'Max Health'}
+              </Text>
+              <TouchableOpacity
+                onPress={closeMaxHealthBottomSheet}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.maxHealthContainer}>
+              <Text style={styles.maxHealthLabel}>Current Max Health:</Text>
+              <View style={styles.maxHealthControls}>
+                <TouchableOpacity
+                  onPress={handleDecrementMaxHealth}
+                  style={styles.maxHealthButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol name="minus" size={24} color={Colors.dark.text} />
+                </TouchableOpacity>
+                <Text style={styles.maxHealthValue}>
+                  {character?.maxHealth ?? 0}
+                </Text>
+                <TouchableOpacity
+                  onPress={handleIncrementMaxHealth}
+                  style={styles.maxHealthButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol name="plus" size={24} color={Colors.dark.text} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Level Bottom Sheet */}
+      <BottomSheet
+        ref={levelBottomSheetRef}
+        index={-1}
+        snapPoints={levelSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderLevelBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>
+                {character ? `${character.name}'s Level` : 'Level'}
+              </Text>
+              <TouchableOpacity
+                onPress={closeLevelBottomSheet}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.maxHealthContainer}>
+              <Text style={styles.maxHealthLabel}>Current Level:</Text>
+              <View style={styles.maxHealthControls}>
+                <TouchableOpacity
+                  onPress={handleDecrementLevel}
+                  style={styles.maxHealthButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol name="minus" size={24} color={Colors.dark.text} />
+                </TouchableOpacity>
+                <Text style={styles.maxHealthValue}>
+                  {character?.level ?? 1}
+                </Text>
+                <TouchableOpacity
+                  onPress={handleIncrementLevel}
+                  style={styles.maxHealthButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol name="plus" size={24} color={Colors.dark.text} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Attack Bottom Sheet */}
+      <BottomSheet
+        ref={attackBottomSheetRef}
+        index={-1}
+        snapPoints={attackSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderAttackBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>
+                {character ? `${character.name}'s Attack` : 'Attack'}
+              </Text>
+              <TouchableOpacity
+                onPress={closeAttackBottomSheet}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.maxHealthContainer}>
+              <Text style={styles.maxHealthLabel}>Current Attack:</Text>
+              <View style={styles.maxHealthControls}>
+                <TouchableOpacity
+                  onPress={handleDecrementAttack}
+                  style={styles.maxHealthButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol name="minus" size={24} color={Colors.dark.text} />
+                </TouchableOpacity>
+                <Text style={styles.maxHealthValue}>
+                  {character ? character.attack : '+0'}
+                </Text>
+                <TouchableOpacity
+                  onPress={handleIncrementAttack}
+                  style={styles.maxHealthButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol name="plus" size={24} color={Colors.dark.text} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Defense Bottom Sheet */}
+      <BottomSheet
+        ref={defenseBottomSheetRef}
+        index={-1}
+        snapPoints={defenseSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderDefenseBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>
+                {character ? `${character.name}'s Defense` : 'Defense'}
+              </Text>
+              <TouchableOpacity
+                onPress={closeDefenseBottomSheet}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.maxHealthContainer}>
+              <Text style={styles.maxHealthLabel}>Current Defense:</Text>
+              <View style={styles.maxHealthControls}>
+                <TouchableOpacity
+                  onPress={handleDecrementDefense}
+                  style={styles.maxHealthButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol name="minus" size={24} color={Colors.dark.text} />
+                </TouchableOpacity>
+                <Text style={styles.maxHealthValue}>
+                  {character ? character.defense : '+0'}
+                </Text>
+                <TouchableOpacity
+                  onPress={handleIncrementDefense}
+                  style={styles.maxHealthButton}
+                  activeOpacity={0.7}
+                >
+                  <IconSymbol name="plus" size={24} color={Colors.dark.text} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Class Bottom Sheet */}
+      <BottomSheet
+        ref={classBottomSheetRef}
+        index={-1}
+        snapPoints={classSnapPoints}
+        enablePanDownToClose
+        enableContentPanningGesture={false}
+        backdropComponent={renderClassBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <View style={styles.bottomSheetHeader}>
+            <Text style={styles.bottomSheetHeaderText}>Select Class</Text>
+            <TouchableOpacity
+              onPress={closeClassBottomSheet}
+              style={styles.closeButton}
+            >
+              <Text style={styles.closeButtonText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <BottomSheetScrollView
+            contentContainerStyle={styles.positionOptionsContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {classes.map(classType => {
+              const isSelected = character?.class.name === classType.name;
+              return (
+                <TouchableOpacity
+                  key={classType.name}
+                  style={[
+                    styles.positionOption,
+                    isSelected && styles.positionOptionSelected,
+                  ]}
+                  onPress={() => handleClassSelect(classType)}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.positionOptionText,
+                      isSelected && styles.positionOptionTextSelected,
+                    ]}
+                  >
+                    {classType.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </BottomSheetScrollView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Delete Confirmation Bottom Sheet */}
+      <BottomSheet
+        ref={deleteConfirmationBottomSheetRef}
+        index={-1}
+        snapPoints={deleteConfirmationSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderDeleteConfirmationBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>Delete Character</Text>
+              <TouchableOpacity
+                onPress={closeDeleteConfirmation}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.deleteConfirmationContainer}>
+              <Text style={styles.deleteConfirmationText}>
+                Are you sure you want to delete{' '}
+                <Text style={styles.deleteConfirmationCharacterName}>
+                  {character?.name}
+                </Text>
+                ? This action cannot be undone.
+              </Text>
+
+              <View style={styles.deleteConfirmationButtons}>
+                <TouchableOpacity
+                  onPress={closeDeleteConfirmation}
+                  style={styles.deleteCancelButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleDeleteCharacter}
+                  style={styles.deleteConfirmButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteConfirmButtonText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Status Bottom Sheet */}
+      <BottomSheet
+        ref={statusBottomSheetRef}
+        index={-1}
+        snapPoints={statusSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderStatusBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+        keyboardBehavior="interactive"
+        keyboardBlurBehavior="restore"
+        android_keyboardInputMode="adjustResize"
+      >
+        <LinearGradient
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetScrollView
+            contentContainerStyle={styles.bottomSheetContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>Add Status</Text>
+              <TouchableOpacity
+                onPress={closeStatusBottomSheet}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.statusInputContainer}>
+              <Text style={styles.statusInputLabel}>Status</Text>
+              <BottomSheetTextInput
+                style={styles.statusInput}
+                value={statusInput}
+                onChangeText={setStatusInput}
+                placeholder="Enter status"
+                placeholderTextColor={Colors.dark.textTertiary}
+                maxLength={20}
+              />
+              {statusInput.length >= 20 && (
+                <Text style={styles.statusInputError}>Limit 20 characters</Text>
+              )}
+
+              {/* Status Pills */}
+              {(() => {
+                // Convert lowercase region to capitalized to match statuses
+                const regionCapitalized = (region.charAt(0).toUpperCase() +
+                  region.slice(1)) as Region;
+                const matchingStatuses = statuses.filter(status =>
+                  status.regions.includes(regionCapitalized)
+                );
+
+                if (matchingStatuses.length === 0) return null;
+
+                return (
+                  <View style={styles.statusPillsContainer}>
+                    <View style={styles.statusPillsRow}>
+                      {matchingStatuses.map((status, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          style={styles.statusQuickSelectPill}
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            const statusText = status.effect
+                              ? `${status.name} - ${status.effect}`
+                              : status.name;
+                            setStatusInput(statusText);
+                            handleAddStatus(statusText);
+                          }}
+                        >
+                          <Text style={styles.statusQuickSelectPillText}>
+                            {status.name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                );
+              })()}
+
+              <TouchableOpacity
+                onPress={() => handleAddStatus()}
+                style={[
+                  styles.addStatusSubmitButton,
+                  (!statusInput.trim() || statusInput.trim().length > 20) &&
+                    styles.addStatusSubmitButtonDisabled,
+                ]}
+                activeOpacity={0.7}
+                disabled={!statusInput.trim() || statusInput.trim().length > 20}
+              >
+                <Text style={styles.addStatusSubmitButtonText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+          </BottomSheetScrollView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Delete Backpack Item Bottom Sheet */}
+      <BottomSheet
+        ref={deleteBackpackItemBottomSheetRef}
+        index={-1}
+        snapPoints={deleteBackpackItemSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderDeleteBackpackItemBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>Remove Item</Text>
+              <TouchableOpacity
+                onPress={closeDeleteBackpackItemBottomSheet}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.deleteConfirmationContainer}>
+              <Text style={styles.deleteConfirmationText}>
+                Are you sure you want to remove{' '}
+                <Text style={styles.deleteConfirmationCharacterName}>
+                  {character?.backpack?.[selectedBackpackItemIndex ?? -1]
+                    ?.name || 'this item'}
+                </Text>{' '}
+                from the backpack? This action cannot be undone.
+              </Text>
+
+              <View style={styles.deleteConfirmationButtons}>
+                <TouchableOpacity
+                  onPress={closeDeleteBackpackItemBottomSheet}
+                  style={styles.deleteCancelButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleDeleteBackpackItem}
+                  style={styles.deleteConfirmButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteConfirmButtonText}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Delete Weapon or Shield Bottom Sheet */}
+      <BottomSheet
+        ref={deleteWeaponOrShieldBottomSheetRef}
+        index={-1}
+        snapPoints={deleteWeaponOrShieldSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderDeleteWeaponOrShieldBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>Remove Item</Text>
+              <TouchableOpacity
+                onPress={closeDeleteWeaponOrShieldBottomSheet}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.deleteConfirmationContainer}>
+              <Text style={styles.deleteConfirmationText}>
+                Are you sure you want to remove{' '}
+                <Text style={styles.deleteConfirmationCharacterName}>
+                  {character?.weaponsAndShield?.[
+                    selectedWeaponOrShieldIndex ?? -1
+                  ]?.name || 'this item'}
+                </Text>{' '}
+                from the weapons and shields? This action cannot be undone.
+              </Text>
+
+              <View style={styles.deleteConfirmationButtons}>
+                <TouchableOpacity
+                  onPress={closeDeleteWeaponOrShieldBottomSheet}
+                  style={styles.deleteCancelButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleDeleteWeaponOrShield}
+                  style={styles.deleteConfirmButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteConfirmButtonText}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Delete Guild Perk Bottom Sheet */}
+      <BottomSheet
+        ref={deleteGuildPerkBottomSheetRef}
+        index={-1}
+        snapPoints={deleteGuildPerkSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderDeleteGuildPerkBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>
+                Remove Guild Perk
+              </Text>
+              <TouchableOpacity
+                onPress={closeDeleteGuildPerkBottomSheet}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.deleteConfirmationContainer}>
+              <Text style={styles.deleteConfirmationText}>
+                Are you sure you want to remove the{' '}
+                <Text style={styles.deleteConfirmationCharacterName}>
+                  {character?.guildPerk?.guild
+                    ? character.guildPerk.guild.charAt(0).toUpperCase() +
+                      character.guildPerk.guild.slice(1) +
+                      ' Guild'
+                    : 'Guild'}
+                </Text>{' '}
+                perk? This action cannot be undone.
+              </Text>
+
+              <View style={styles.deleteConfirmationButtons}>
+                <TouchableOpacity
+                  onPress={closeDeleteGuildPerkBottomSheet}
+                  style={styles.deleteCancelButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleDeleteGuildPerk}
+                  style={styles.deleteConfirmButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteConfirmButtonText}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
+
+      {/* Delete Title Bottom Sheet */}
+      <BottomSheet
+        ref={deleteTitleBottomSheetRef}
+        index={-1}
+        snapPoints={deleteTitleSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderDeleteTitleBackdrop}
+        backgroundStyle={styles.bottomSheetBackground}
+        handleIndicatorStyle={styles.handleIndicator}
+      >
+        <LinearGradient
+          colors={
+            colors.backgroundSecondaryGradient as [string, string, ...string[]]
+          }
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientBackground}
+        >
+          <BottomSheetView style={styles.bottomSheetContent}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetHeaderText}>Remove Title</Text>
+              <TouchableOpacity
+                onPress={closeDeleteTitleBottomSheet}
+                style={styles.closeButton}
+              >
+                <Text style={styles.closeButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.deleteConfirmationContainer}>
+              <Text style={styles.deleteConfirmationText}>
+                Are you sure you want to remove the title{' '}
+                <Text style={styles.deleteConfirmationCharacterName}>
+                  {selectedTitleForDeletion?.titleName || 'this title'}
+                </Text>{' '}
+                ? This action cannot be undone.
+              </Text>
+
+              <View style={styles.deleteConfirmationButtons}>
+                <TouchableOpacity
+                  onPress={closeDeleteTitleBottomSheet}
+                  style={styles.deleteCancelButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleDeleteTitle}
+                  style={styles.deleteConfirmButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.deleteConfirmButtonText}>Remove</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </BottomSheetView>
+        </LinearGradient>
+      </BottomSheet>
+    </LinearGradient>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.dark.border,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.dark.text,
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 16,
+  },
+  placeholder: {
+    width: 44,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 100,
+  },
+  scrollContentTablet: {
+    paddingHorizontal: 40,
+    paddingTop: 32,
+    paddingBottom: 120,
+  },
+  contentWrapper: {
+    width: '100%',
+  },
+  contentWrapperTablet: {
+    maxWidth: 700,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  headerSection: {
+    marginBottom: 24,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'flex-start',
+  },
+  rollButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  rollButtonsContainerMobile: {
+    flexDirection: 'column',
+  },
+  titleSection: {
+    marginBottom: 24,
+  },
+  titleText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: Colors.dark.text,
+    textAlign: 'center',
+  },
+  content: {
+    flex: 1,
+    width: '100%',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 64,
+    paddingHorizontal: 32,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: Colors.dark.textSecondary,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  errorContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 64,
+    paddingHorizontal: 32,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  errorIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#ef4444',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    color: Colors.dark.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  characterCard: {
+    backgroundColor: 'rgba(21, 21, 32, 0.6)',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  infoContainer: {
+    width: '100%',
+  },
+  infoContainerTablet: {
+    flexDirection: 'row',
+    gap: 32,
+    alignItems: 'flex-start',
+  },
+  infoColumn: {
+    width: '100%',
+  },
+  infoColumnTablet: {
+    flex: 1,
+  },
+  sectionContainer: {
+    width: '100%',
+  },
+  sectionContainerTablet: {
+    flex: 1,
+  },
+  section: {
+    marginBottom: 24,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    width: '100%',
+  },
+  sectionTablet: {
+    marginBottom: 0,
+    paddingBottom: 0,
+    borderBottomWidth: 0,
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: Colors.dark.text,
+    marginBottom: 16,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.dark.textSecondary,
+    marginRight: 12,
+    minWidth: 100,
+  },
+  value: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: Colors.dark.text,
+  },
+  counterContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 24,
+  },
+  counterButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.dark.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#8b5cf6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  counterValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.dark.text,
+    minWidth: 60,
+    textAlign: 'center',
+  },
+  counterSection: {
+    marginTop: 12,
+    marginBottom: 24,
+    paddingTop: 24,
+    paddingBottom: 24,
+    gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  counterRowContainer: {
+    width: '100%',
+  },
+  counterRowContainerTablet: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 24,
+    alignItems: 'flex-start',
+  },
+  counterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 8,
+    justifyContent: 'space-between',
+    paddingRight: 16,
+  },
+  counterRowTablet: {
+    flex: 1,
+    minWidth: '45%',
+    maxWidth: '48%',
+    marginBottom: 0,
+    width: '48%',
+  },
+  counterLabel: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: Colors.dark.textSecondary,
+    minWidth: 70,
+  },
+  counterControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  smallCounterButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: Colors.dark.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  abilitySection: {
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  abilityText: {
+    fontSize: 16,
+    color: Colors.dark.text,
+    lineHeight: 24,
+  },
+  abilityLabel: {
+    fontWeight: '600',
+    color: Colors.dark.text,
+  },
+  abilityName: {
+    fontStyle: 'italic',
+    fontWeight: '600',
+    color: Colors.dark.text,
+  },
+  abilityValue: {
+    color: Colors.dark.textSecondary,
+    lineHeight: 24,
+  },
+  bottomSheetBackground: {
+    backgroundColor: 'transparent',
+  },
+  gradientBackground: {
+    flex: 1,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
+  handleIndicator: {
+    backgroundColor: Colors.dark.border,
+    width: 40,
+  },
+  bottomSheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingBottom: 16,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.dark.border,
+  },
+  bottomSheetHeaderText: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: Colors.dark.text,
+  },
+  closeButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+    backgroundColor: Colors.dark.backgroundTertiary,
+  },
+  closeButtonText: {
+    fontSize: 24,
+    color: Colors.dark.textSecondary,
+    fontWeight: '300',
+  },
+  positionOptionsContent: {
+    paddingHorizontal: 24,
+    paddingBottom: 120,
+    flexGrow: 1,
+  },
+  positionOption: {
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: Colors.dark.backgroundTertiary,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    marginBottom: 12,
+  },
+  positionOptionSelected: {
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    borderColor: Colors.dark.borderSecondary,
+  },
+  positionOptionText: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: Colors.dark.textSecondary,
+    textAlign: 'center',
+  },
+  positionOptionTextSelected: {
+    color: Colors.dark.text,
+    fontWeight: '600',
+  },
+  bottomSheetContent: {
+    padding: 24,
+    paddingBottom: 40,
+    flex: 1,
+  },
+  maxHealthContainer: {
+    alignItems: 'center',
+    gap: 24,
+  },
+  maxHealthLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.dark.textSecondary,
+  },
+  maxHealthControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 24,
+  },
+  maxHealthButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.dark.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  maxHealthValue: {
+    fontSize: 36,
+    fontWeight: '700',
+    color: Colors.dark.text,
+    minWidth: 80,
+    textAlign: 'center',
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.dark.border,
+    backgroundColor: Colors.dark.backgroundPrimary,
+  },
+  footerTablet: {
+    paddingHorizontal: 40,
+    paddingBottom: 30,
+    paddingTop: 20,
+  },
+  deleteButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 56,
+    borderRadius: 14,
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+    maxWidth: 700,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  deleteButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#ef4444',
+    letterSpacing: 0.5,
+  },
+  deleteConfirmationContainer: {
+    paddingHorizontal: 24,
+    gap: 24,
+  },
+  deleteConfirmationText: {
+    fontSize: 16,
+    color: Colors.dark.textSecondary,
+    lineHeight: 24,
+    textAlign: 'center',
+  },
+  deleteConfirmationCharacterName: {
+    fontWeight: '700',
+    color: Colors.dark.text,
+  },
+  deleteConfirmationButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'center',
+  },
+  deleteCancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.dark.backgroundTertiary,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteCancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.dark.text,
+  },
+  deleteConfirmButton: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteConfirmButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ef4444',
+  },
+  statusesSection: {
+    width: '100%',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    paddingTop: 24,
+    paddingBottom: 16,
+  },
+  statusesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  statusesLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.dark.textSecondary,
+  },
+  addStatusButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.dark.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  noStatusesText: {
+    fontSize: 14,
+    color: Colors.dark.textTertiary,
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    paddingVertical: 6,
+    paddingLeft: 12,
+    paddingRight: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  statusPillText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.dark.text,
+    marginRight: 6,
+  },
+  statusPillRemove: {
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusPillsContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 8,
+  },
+  statusPillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  statusQuickSelectPill: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: Colors.dark.backgroundTertiary,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  statusQuickSelectPillText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.dark.text,
+  },
+  statusInputContainer: {
+    paddingHorizontal: 24,
+    gap: 16,
+  },
+  statusInputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.dark.text,
+  },
+  statusInput: {
+    backgroundColor: Colors.dark.backgroundTertiary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: Colors.dark.text,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  statusInputError: {
+    fontSize: 14,
+    color: '#ef4444',
+    marginTop: -8,
+  },
+  addStatusSubmitButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.dark.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addStatusSubmitButtonDisabled: {
+    opacity: 0.5,
+  },
+  addStatusSubmitButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.dark.text,
+  },
+  weaponsAndShieldsSection: {
+    width: '100%',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    paddingTop: 24,
+    paddingBottom: 16,
+  },
+  weaponsAndShieldsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  weaponsAndShieldsLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.dark.textSecondary,
+  },
+  addWeaponOrShieldButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.dark.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addWeaponOrShieldButtonDisabled: {
+    backgroundColor: Colors.dark.backgroundTertiary,
+    opacity: 0.5,
+  },
+  weaponsAndShieldsContainer: {
+    flexDirection: 'column',
+    gap: 8,
+  },
+  weaponOrShieldItemContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'stretch',
+  },
+  weaponOrShieldItem: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  weaponOrShieldItemContent: {
+    gap: 8,
+  },
+  weaponOrShieldItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  weaponOrShieldItemName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.dark.text,
+    flex: 1,
+  },
+  weaponBadge: {
+    backgroundColor: 'rgba(139, 92, 246, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.dark.accent,
+  },
+  weaponBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.dark.accent,
+    textTransform: 'uppercase',
+  },
+  shieldBadge: {
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#3b82f6',
+  },
+  shieldBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#3b82f6',
+    textTransform: 'uppercase',
+  },
+  weaponOrShieldItemMeta: {
+    fontSize: 12,
+    color: Colors.dark.textTertiary,
+    fontStyle: 'italic',
+  },
+  weaponOrShieldItemDescription: {
+    fontSize: 13,
+    color: Colors.dark.textSecondary,
+    lineHeight: 18,
+  },
+  weaponAbilityName: {
+    fontStyle: 'italic',
+    fontWeight: '600',
+    color: Colors.dark.text,
+  },
+  emptyWeaponsAndShieldsContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyWeaponsAndShieldsText: {
+    fontSize: 14,
+    color: Colors.dark.textTertiary,
+    fontStyle: 'italic',
+  },
+  guildPerksSection: {
+    width: '100%',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    paddingTop: 24,
+    paddingBottom: 16,
+  },
+  guildPerksHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  guildPerksLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.dark.textSecondary,
+  },
+  addGuildPerkButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.dark.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  guildPerkContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  guildPerkGuildText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.dark.textSecondary,
+    marginBottom: 8,
+    textTransform: 'capitalize',
+  },
+  guildPerkText: {
+    fontSize: 16,
+    color: Colors.dark.text,
+    lineHeight: 22,
+  },
+  emptyGuildPerkContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyGuildPerkText: {
+    fontSize: 14,
+    color: Colors.dark.textTertiary,
+    fontStyle: 'italic',
+  },
+  weaponOrShieldBottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  weaponChargesContainer: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  weaponChargesLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.dark.textSecondary,
+  },
+  weaponChargesControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  weaponChargesButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: Colors.dark.backgroundTertiary,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  weaponChargesValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.dark.text,
+    minWidth: 40,
+    textAlign: 'center',
+  },
+  backpackSection: {
+    width: '100%',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    paddingTop: 24,
+    paddingBottom: 16,
+  },
+  backpackHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  backpackLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.dark.textSecondary,
+  },
+  addBackpackItemButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.dark.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addBackpackItemButtonDisabled: {
+    backgroundColor: Colors.dark.backgroundTertiary,
+    opacity: 0.5,
+  },
+  backpackContainer: {
+    flexDirection: 'column',
+    gap: 8,
+  },
+  backpackItemContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'stretch',
+  },
+  backpackItem: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  backpackItemContent: {
+    gap: 8,
+  },
+  backpackItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  backpackItemName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.dark.text,
+    flex: 1,
+  },
+  luniteShardBadge: {
+    backgroundColor: 'rgba(139, 92, 246, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.dark.accent,
+  },
+  luniteShardBadgeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.dark.accent,
+    textTransform: 'uppercase',
+  },
+  backpackItemDescription: {
+    fontSize: 13,
+    color: Colors.dark.textSecondary,
+    lineHeight: 18,
+  },
+  backpackItemMeta: {
+    marginTop: 4,
+  },
+  backpackItemMetaText: {
+    fontSize: 12,
+    color: Colors.dark.textTertiary,
+    fontStyle: 'italic',
+  },
+  emptyBackpackContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyBackpackText: {
+    fontSize: 14,
+    color: Colors.dark.textTertiary,
+    fontStyle: 'italic',
+  },
+  backpackItemQtyControls: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+    gap: 4,
+    paddingLeft: 4,
+  },
+  qtyButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: Colors.dark.backgroundTertiary,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  equippedCheckboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  checkboxBox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: Colors.dark.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.dark.backgroundTertiary,
+  },
+  checkboxBoxChecked: {
+    backgroundColor: Colors.dark.accent,
+    borderColor: Colors.dark.accent,
+  },
+  checkboxBoxDisabled: {
+    opacity: 0.5,
+  },
+  checkboxLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.dark.text,
+  },
+  checkboxLabelDisabled: {
+    color: Colors.dark.textTertiary,
+  },
+  titlesSection: {
+    width: '100%',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    paddingTop: 24,
+    paddingBottom: 16,
+  },
+  titlesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  titlesLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.dark.textSecondary,
+  },
+  addTitleButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.dark.accent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  titlesContainer: {
+    flexDirection: 'column',
+    gap: 16,
+  },
+  titleSourceGroup: {
+    gap: 8,
+  },
+  titleSourceLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.dark.textSecondary,
+    marginBottom: 4,
+  },
+  titleItem: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  titleItemText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.dark.text,
+  },
+  emptyTitlesContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitlesText: {
+    fontSize: 14,
+    color: Colors.dark.textTertiary,
+    fontStyle: 'italic',
+  },
+});

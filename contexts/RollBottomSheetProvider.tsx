@@ -7,7 +7,7 @@ import { useRoll } from './RollContext';
 import { randomRolls } from '@/constants/types';
 import { Colors } from '@/constants/theme';
 
-const ROLL_OPTIONS: randomRolls[] = ['d6', '2d6', '2d6^'];
+const ROLL_OPTIONS: randomRolls[] = ['d4', 'd6', '2d6', '2d6^'];
 
 const formatRollLabel = (roll: randomRolls): string => {
   return `Roll ${roll}`;
@@ -26,7 +26,7 @@ export function RollBottomSheetProvider({ children }: { children: ReactNode }) {
 
   const snapPoints = React.useMemo(() => {
     const screenHeight = Dimensions.get('window').height;
-    const height = screenHeight * 0.4 + 32;
+    const height = screenHeight * 0.45 + 32;
     return [height];
   }, []);
 

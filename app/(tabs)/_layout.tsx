@@ -32,16 +32,17 @@ export default function TabLayout() {
         tabBarIconStyle: {
           marginTop: 4,
         },
-      }}>
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Dungeon',
           tabBarIcon: ({ color, focused }) => (
-            <IconSymbol 
-              size={focused ? 26 : 24} 
-              name="door.right.hand.open" 
-              color={color} 
+            <IconSymbol
+              size={focused ? 26 : 24}
+              name="door.right.hand.open"
+              color={color}
             />
           ),
         }}
@@ -51,10 +52,10 @@ export default function TabLayout() {
         options={{
           title: 'Altar',
           tabBarIcon: ({ color, focused }) => (
-            <IconSymbol 
-              size={focused ? 26 : 24} 
-              name="table.furniture.fill" 
-              color={color} 
+            <IconSymbol
+              size={focused ? 26 : 24}
+              name="table.furniture.fill"
+              color={color}
             />
           ),
         }}
@@ -64,10 +65,10 @@ export default function TabLayout() {
         options={{
           title: 'Search',
           tabBarIcon: ({ color, focused }) => (
-            <IconSymbol 
-              size={focused ? 26 : 24} 
-              name="sparkle.magnifyingglass" 
-              color={color} 
+            <IconSymbol
+              size={focused ? 26 : 24}
+              name="sparkle.magnifyingglass"
+              color={color}
             />
           ),
         }}
@@ -77,23 +78,23 @@ export default function TabLayout() {
         options={{
           title: 'Treasure',
           tabBarIcon: ({ color, focused }) => (
-            <IconSymbol 
-              size={focused ? 26 : 24} 
-              name="wand.and.rays" 
-              color={color} 
+            <IconSymbol
+              size={focused ? 26 : 24}
+              name="wand.and.rays"
+              color={color}
             />
           ),
         }}
       />
       <Tabs.Screen
-        name="backtrack"
+        name="party"
         options={{
-          title: 'Backtrack',
+          title: 'Party',
           tabBarIcon: ({ color, focused }) => (
-            <IconSymbol 
-              size={focused ? 26 : 24} 
-              name="figure.walk" 
-              color={color} 
+            <IconSymbol
+              size={focused ? 26 : 24}
+              name="person.3"
+              color={color}
             />
           ),
         }}

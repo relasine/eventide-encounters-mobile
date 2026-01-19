@@ -1,5 +1,12 @@
 import { Image } from 'expo-image';
-import { View, StyleSheet, TouchableOpacity, Text, ScrollView, ActivityIndicator } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 
@@ -7,10 +14,18 @@ import { Forsaken } from '../../components/content/Forsaken';
 import { Behemoth } from '../../components/content/Behemoth';
 import { Peril } from '../../components/content/Peril';
 import { Event } from '../../components/content/Event';
-import { BehemothDungeon, GeneratedDungeon, EnemyDungeon, EventDungeon, PerilDungeon, BacktrackResult } from '@/constants/types';
+import {
+  BehemothDungeon,
+  GeneratedDungeon,
+  EnemyDungeon,
+  EventDungeon,
+  PerilDungeon,
+  BacktrackResult,
+} from '@/constants/types';
 import { Horde } from '../../components/content/Horde';
 import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
+import { DefendRoll } from '@/components/DefendRoll';
 import { RollSelector } from '@/components/RollSelector';
 import { Colors } from '@/constants/theme';
 import { API_KEY, API_URL } from '@/constants';
@@ -19,7 +34,8 @@ import { useResponsive } from '@/hooks/use-responsive';
 export default function HomeScreen() {
   const { region } = useRegion();
   const [encounter, setEncounter] = useState<GeneratedDungeon | null>(null);
-  const [backtrackResult, setBacktrackResult] = useState<BacktrackResult | null>(null);
+  const [backtrackResult, setBacktrackResult] =
+    useState<BacktrackResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const colors = Colors.dark;
@@ -34,29 +50,32 @@ export default function HomeScreen() {
       const response = await fetch(`${API_URL}/api/v1/dungeon/${region}`, {
         headers: {
           'x-api-key': API_KEY,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+        },
       });
-      
+
       if (!response.ok) {
-        throw new Error(`Failed to generate dungeon: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Failed to generate dungeon: ${response.status} ${response.statusText}`
+        );
       }
-      
+
       const data = await response.json();
-      
+
       if (!data) {
         throw new Error('Invalid response format from server');
       }
-      
+
       setEncounter(data);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      const errorMessage =
+        error instanceof Error ? error.message : 'An unexpected error occurred';
       setError(errorMessage);
       console.error('Error generating dungeon:', error);
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   const backtrack = async () => {
     setIsLoading(true);
@@ -64,33 +83,36 @@ export default function HomeScreen() {
     setBacktrackResult(null);
     setError(null);
     try {
-        const response = await fetch(`${API_URL}/api/v1/backtrack/${region}`, {
-            headers: {
-                'x-api-key': API_KEY,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Failed to backtrack: ${response.status} ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        
-        if (!data) {
-            throw new Error('Invalid response format from server');
-        }
-        
-        setBacktrackResult(data);
+      const response = await fetch(`${API_URL}/api/v1/backtrack/${region}`, {
+        headers: {
+          'x-api-key': API_KEY,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to backtrack: ${response.status} ${response.statusText}`
+        );
+      }
+
+      const data = await response.json();
+
+      if (!data) {
+        throw new Error('Invalid response format from server');
+      }
+
+      setBacktrackResult(data);
     } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-        setError(errorMessage);
-        console.error('Error backtracking:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'An unexpected error occurred';
+      setError(errorMessage);
+      console.error('Error backtracking:', error);
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
-}
-  
+  };
+
   return (
     <LinearGradient
       colors={colors.backgroundGradient as [string, string, ...string[]]}
@@ -98,140 +120,189 @@ export default function HomeScreen() {
       end={{ x: 1, y: 1 }}
       style={styles.container}
     >
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          isTablet && styles.scrollContentTablet
+          isTablet && styles.scrollContentTablet,
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[
-          styles.contentWrapper,
-          isTablet && styles.contentWrapperTablet
-        ]}>
+        <View
+          style={[
+            styles.contentWrapper,
+            isTablet && styles.contentWrapperTablet,
+          ]}
+        >
           <View style={styles.header}>
             <RegionSelector />
-            <RollSelector />
+            <View
+              style={[
+                styles.rollButtonsContainer,
+                !isTablet && styles.rollButtonsContainerMobile,
+              ]}
+            >
+              {isTablet && <DefendRoll />}
+              <RollSelector />
+            </View>
           </View>
 
           <View style={styles.content}>
-          {isLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.accent} />
-              <Text style={styles.loadingText}>Generating dungeon...</Text>
-            </View>
-          ) : error ? (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorIcon}>⚠️</Text>
-              <Text style={styles.errorTitle}>Error</Text>
-              <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity 
-                style={styles.retryButton}
-                onPress={generateDungeon}
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.accent} />
+                <Text style={styles.loadingText}>Generating dungeon...</Text>
+              </View>
+            ) : error ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorIcon}>⚠️</Text>
+                <Text style={styles.errorTitle}>Error</Text>
+                <Text style={styles.errorText}>{error}</Text>
+                <TouchableOpacity
+                  style={styles.retryButton}
+                  onPress={generateDungeon}
+                >
+                  <Text style={styles.retryButtonText}>Try Again</Text>
+                </TouchableOpacity>
+              </View>
+            ) : encounter ? (
+              <View
+                style={[
+                  styles.encounterCard,
+                  isTablet && styles.encounterCardTablet,
+                ]}
               >
-                <Text style={styles.retryButtonText}>Try Again</Text>
-              </TouchableOpacity>
-            </View>
-          ) : encounter ? (
-            <View style={[
-              styles.encounterCard,
-              isTablet && styles.encounterCardTablet
-            ]}>
-              <View style={[
-                styles.cardContent,
-                isTablet && styles.cardContentTablet
-              ]}>
-                <View style={[
-                  styles.imageContainer,
-                  isTablet && styles.imageContainerTablet
-                ]}>
-                  <Image
-                    source={encounter.image}
+                <View
+                  style={[
+                    styles.cardContent,
+                    isTablet && styles.cardContentTablet,
+                  ]}
+                >
+                  <View
                     style={[
-                      styles.encounterImage,
-                      isTablet && styles.encounterImageTablet
+                      styles.imageContainer,
+                      isTablet && styles.imageContainerTablet,
                     ]}
-                    contentFit="cover"
-                  />
-                </View>
-                
-                <View style={[
-                  styles.encounterInfo,
-                  isTablet && styles.encounterInfoTablet
-                ]}>
-                   {encounter.roomType === 'Combat' &&
-                    (encounter.roomSubtype === 'Behemoth' && 'enemy' in encounter
-                      ? <Text style={styles.name}>{(encounter as BehemothDungeon).enemy.name}</Text>
-                      : (encounter.roomSubtype === 'Forsaken' || encounter.roomSubtype === 'Ambush') && 'enemy' in encounter
-                        ? <Text style={styles.name}>{(encounter as EnemyDungeon).enemy.name}</Text>
-                        : null)
-                  }
-                  <Text style={styles.rollText}>Roll: {encounter.dungeonNumber}</Text>
-                  <Text style={styles.encounterTypeText}>{encounter.roomType}</Text>
-                  {encounter.roomSubtype && (
-                    <Text style={styles.subtypeText}>{encounter.roomSubtype}</Text>
-                  )}
-                  {/* 
+                  >
+                    <Image
+                      source={encounter.image}
+                      style={[
+                        styles.encounterImage,
+                        isTablet && styles.encounterImageTablet,
+                      ]}
+                      contentFit="cover"
+                    />
+                  </View>
+
+                  <View
+                    style={[
+                      styles.encounterInfo,
+                      isTablet && styles.encounterInfoTablet,
+                    ]}
+                  >
+                    {encounter.roomType === 'Combat' &&
+                      (encounter.roomSubtype === 'Behemoth' &&
+                      'enemy' in encounter ? (
+                        <Text style={styles.name}>
+                          {(encounter as BehemothDungeon).enemy.name}
+                        </Text>
+                      ) : (encounter.roomSubtype === 'Forsaken' ||
+                          encounter.roomSubtype === 'Ambush') &&
+                        'enemy' in encounter ? (
+                        <Text style={styles.name}>
+                          {(encounter as EnemyDungeon).enemy.name}
+                        </Text>
+                      ) : null)}
+                    <Text style={styles.rollText}>
+                      Roll: {encounter.dungeonNumber}
+                    </Text>
+                    <Text style={styles.encounterTypeText}>
+                      {encounter.roomType}
+                    </Text>
+                    {encounter.roomSubtype && (
+                      <Text style={styles.subtypeText}>
+                        {encounter.roomSubtype}
+                      </Text>
+                    )}
+                    {/* 
                     Show the enemy/behemoth/forsaken name for Combat rooms in a type-safe way
                   */}
+                  </View>
                 </View>
-              </View>
 
-              <View style={[
-                styles.encounterDetails,
-                isTablet && styles.encounterDetailsTablet
-              ]}>
-                {encounter.roomType === 'Combat' && encounter.roomSubtype === 'Behemoth' ? (
-                  <Behemoth encounter={(encounter as BehemothDungeon).enemy} />
+                <View
+                  style={[
+                    styles.encounterDetails,
+                    isTablet && styles.encounterDetailsTablet,
+                  ]}
+                >
+                  {encounter.roomType === 'Combat' &&
+                  encounter.roomSubtype === 'Behemoth' ? (
+                    <Behemoth
+                      encounter={(encounter as BehemothDungeon).enemy}
+                    />
+                  ) : null}
+                  {encounter.roomType === 'Combat' &&
+                  encounter.roomSubtype === 'Forsaken' ? (
+                    <Forsaken encounter={(encounter as EnemyDungeon).enemy} />
+                  ) : null}
+                  {encounter.roomType === 'Combat' &&
+                  encounter.roomSubtype === 'Ambush' ? (
+                    <Horde encounter={(encounter as EnemyDungeon).enemy} />
+                  ) : null}
+                  {encounter.roomType === 'Event' &&
+                  'event' in encounter &&
+                  (encounter as EventDungeon).event?.action ? (
+                    <Event encounter={(encounter as EventDungeon).event} />
+                  ) : null}
+                  {encounter.roomType === 'Peril & Altar' &&
+                  encounter.roomSubtype === null ? (
+                    <Peril encounter={(encounter as PerilDungeon).peril} />
+                  ) : null}
+                </View>
+              </View>
+            ) : backtrackResult ? (
+              <View style={styles.resultCard}>
+                {backtrackResult.ambushResult === null &&
+                !backtrackResult.ambushed ? (
+                  <View style={styles.safeMessageContainer}>
+                    <Text style={styles.safeMessage}>
+                      You backtrack safely without attracting unwanted
+                      attention.
+                    </Text>
+                  </View>
                 ) : null}
-                {encounter.roomType === 'Combat' && encounter.roomSubtype === 'Forsaken' ? (
-                  <Forsaken encounter={(encounter as EnemyDungeon).enemy} />
-                ) : null}
-                {encounter.roomType === 'Combat' && encounter.roomSubtype === 'Ambush' ? (
-                  <Horde encounter={(encounter as EnemyDungeon).enemy} />
-                ) : null}
-                {encounter.roomType === 'Event' && 'event' in encounter && (encounter as EventDungeon).event?.action ? (
-                  <Event encounter={(encounter as EventDungeon).event} />
-                ) : null}
-                {encounter.roomType === 'Peril & Altar' && encounter.roomSubtype === null ? (
-                  <Peril encounter={(encounter as PerilDungeon).peril} />
+                {backtrackResult.ambushResult !== null &&
+                backtrackResult.ambushed ? (
+                  <View>
+                    <Text style={styles.ambushTitle}>
+                      You have been ambushed!
+                    </Text>
+                    <Text style={styles.ambushDescription}>
+                      You are preemptively attacked by four enemies from the
+                      horde!
+                    </Text>
+                    <Text style={styles.ambushName}>
+                      {backtrackResult.ambushResult.name}
+                    </Text>
+                    <Horde encounter={backtrackResult.ambushResult} />
+                  </View>
                 ) : null}
               </View>
-            </View>
-          ) : backtrackResult ? (
-            <View style={styles.resultCard}>
-              {backtrackResult.ambushResult === null && !backtrackResult.ambushed ? (
-                <View style={styles.safeMessageContainer}>
-                  <Text style={styles.safeMessage}>
-                    You backtrack safely without attracting unwanted attention.
-                  </Text>
-                </View>
-              ) : null}
-              {backtrackResult.ambushResult !== null && backtrackResult.ambushed ? (
-                <View>
-                    <Text style={styles.ambushTitle}>You have been ambushed!</Text>
-                    <Text style={styles.ambushDescription}>You are preemptively attacked by four enemies from the horde!</Text>
-                    <Text style={styles.ambushName}>{backtrackResult.ambushResult.name}</Text>
-                    <Horde encounter={backtrackResult.ambushResult} />
-                </View>
-            ) : null}
-        </View>
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateTitle}>Generate Your Dungeon</Text>
-              <Text style={styles.emptyStateText}>
-                Tap the button below to create a new encounter
-              </Text>
-            </View>
-          )}
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateTitle}>
+                  Generate Your Dungeon
+                </Text>
+                <Text style={styles.emptyStateText}>
+                  Tap the button below to create a new encounter
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </ScrollView>
 
-      <View style={[
-        styles.footer,
-        isTablet && styles.footerTablet
-      ]}>
+      <View style={[styles.footer, isTablet && styles.footerTablet]}>
         <View style={styles.buttonContainer}>
           <View style={styles.exploreButtonContainer}>
             <LinearGradient
@@ -240,8 +311,11 @@ export default function HomeScreen() {
               end={{ x: 1, y: 0 }}
               style={styles.buttonGradient}
             >
-              <TouchableOpacity 
-                style={[styles.generateButton, isLoading && styles.generateButtonDisabled]}
+              <TouchableOpacity
+                style={[
+                  styles.generateButton,
+                  isLoading && styles.generateButtonDisabled,
+                ]}
                 onPress={generateDungeon}
                 activeOpacity={0.9}
                 disabled={isLoading}
@@ -251,8 +325,11 @@ export default function HomeScreen() {
             </LinearGradient>
           </View>
           <View style={styles.backtrackButtonContainer}>
-            <TouchableOpacity 
-              style={[styles.backtrackButton, isLoading && styles.generateButtonDisabled]}
+            <TouchableOpacity
+              style={[
+                styles.backtrackButton,
+                isLoading && styles.generateButtonDisabled,
+              ]}
               onPress={backtrack}
               activeOpacity={0.9}
               disabled={isLoading}
@@ -288,7 +365,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700',
     color: Colors.dark.text,
-    paddingBottom: 8
+    paddingBottom: 8,
   },
   contentWrapperTablet: {
     maxWidth: 700,
@@ -300,6 +377,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+  },
+  rollButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  rollButtonsContainerMobile: {
+    flexDirection: 'column',
   },
   content: {
     flex: 1,
@@ -570,10 +655,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   safeMessage: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: Colors.dark.text,
-      textAlign: 'center',
-      lineHeight: 28,
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.dark.text,
+    textAlign: 'center',
+    lineHeight: 28,
   },
 });
