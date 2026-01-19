@@ -185,6 +185,8 @@ export type Character = {
   weaponsAndShield: EquippedWeaponsOrShields;
   guildPerk: GuildPerk | null;
   titles: Title[];
+  favor: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 0 | null;
+  chi: 0 | 1 | 2 | 3 | null;
 };
 
 export type Title = {

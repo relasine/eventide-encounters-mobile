@@ -187,6 +187,72 @@ export default function PartyScreen() {
     [handleUpdateCharacter]
   );
 
+  const handleIncrementChi = useCallback(
+    (character: Character) => {
+      if (typeof character.chi !== 'number' || character.chi >= 3) return;
+      const updated = {
+        ...character,
+        chi: Math.min(3, (character.chi ?? 0) + 1) as 0 | 1 | 2 | 3 | null,
+      };
+      handleUpdateCharacter(updated);
+    },
+    [handleUpdateCharacter]
+  );
+
+  const handleDecrementChi = useCallback(
+    (character: Character) => {
+      if (typeof character.chi !== 'number') return;
+      const updated = {
+        ...character,
+        chi: Math.max(0, character.chi - 1) as 0 | 1 | 2 | 3 | null,
+      };
+      handleUpdateCharacter(updated);
+    },
+    [handleUpdateCharacter]
+  );
+
+  const handleIncrementFavor = useCallback(
+    (character: Character) => {
+      if (typeof character.favor !== 'number' || character.favor >= 3) return;
+      const updated = {
+        ...character,
+        favor: Math.min(3, (character.favor ?? 0) + 1) as
+          | 1
+          | 2
+          | 3
+          | 4
+          | 5
+          | 6
+          | 7
+          | 0
+          | null,
+      };
+      handleUpdateCharacter(updated);
+    },
+    [handleUpdateCharacter]
+  );
+
+  const handleDecrementFavor = useCallback(
+    (character: Character) => {
+      if (typeof character.favor !== 'number') return;
+      const updated = {
+        ...character,
+        favor: Math.max(0, character.favor - 1) as
+          | 1
+          | 2
+          | 3
+          | 4
+          | 5
+          | 6
+          | 7
+          | 0
+          | null,
+      };
+      handleUpdateCharacter(updated);
+    },
+    [handleUpdateCharacter]
+  );
+
   const openMaxHealthBottomSheet = useCallback((character: Character) => {
     setSelectedCharacter(character);
     maxHealthBottomSheetRef.current?.snapToIndex(0);
@@ -453,6 +519,15 @@ export default function PartyScreen() {
                               {character.level}
                             </Text>
                           </View>
+                          <View style={styles.characterDetailRow}>
+                            <Text style={styles.characterLabel}>ATK: </Text>
+                            <Text style={styles.characterValue}>
+                              {character.attack}
+                            </Text>
+                          </View>
+                        </View>
+
+                        <View style={styles.attackDefenseRow}>
                           <TouchableOpacity
                             style={styles.characterDetailRow}
                             onPress={() => openPositionBottomSheet(character)}
@@ -467,15 +542,7 @@ export default function PartyScreen() {
                                 : 'N/A'}
                             </Text>
                           </TouchableOpacity>
-                        </View>
 
-                        <View style={styles.attackDefenseRow}>
-                          <View style={styles.characterDetailRow}>
-                            <Text style={styles.characterLabel}>ATK: </Text>
-                            <Text style={styles.characterValue}>
-                              {character.attack}
-                            </Text>
-                          </View>
                           <View style={styles.characterDetailRow}>
                             <Text style={styles.characterLabel}>DEF: </Text>
                             <Text style={styles.characterValue}>
@@ -648,6 +715,78 @@ export default function PartyScreen() {
                             </TouchableOpacity>
                           </View>
                         </View>
+
+                        {character.class.name === 'Monk' &&
+                          typeof character.chi === 'number' && (
+                            <View style={styles.counterRow}>
+                              <Text style={styles.counterLabel}>Chi: </Text>
+                              <View style={styles.counterControls}>
+                                <TouchableOpacity
+                                  onPress={() => handleDecrementChi(character)}
+                                  style={styles.smallCounterButton}
+                                  activeOpacity={0.7}
+                                >
+                                  <IconSymbol
+                                    name="minus"
+                                    size={17}
+                                    color={Colors.dark.text}
+                                  />
+                                </TouchableOpacity>
+                                <Text style={styles.counterValue}>
+                                  {character.chi}
+                                </Text>
+                                <TouchableOpacity
+                                  onPress={() => handleIncrementChi(character)}
+                                  style={styles.smallCounterButton}
+                                  activeOpacity={0.7}
+                                >
+                                  <IconSymbol
+                                    name="plus"
+                                    size={17}
+                                    color={Colors.dark.text}
+                                  />
+                                </TouchableOpacity>
+                              </View>
+                            </View>
+                          )}
+
+                        {character.class.name === 'Cleric' &&
+                          typeof character.favor === 'number' && (
+                            <View style={styles.counterRow}>
+                              <Text style={styles.counterLabel}>Favor: </Text>
+                              <View style={styles.counterControls}>
+                                <TouchableOpacity
+                                  onPress={() =>
+                                    handleDecrementFavor(character)
+                                  }
+                                  style={styles.smallCounterButton}
+                                  activeOpacity={0.7}
+                                >
+                                  <IconSymbol
+                                    name="minus"
+                                    size={17}
+                                    color={Colors.dark.text}
+                                  />
+                                </TouchableOpacity>
+                                <Text style={styles.counterValue}>
+                                  {character.favor}
+                                </Text>
+                                <TouchableOpacity
+                                  onPress={() =>
+                                    handleIncrementFavor(character)
+                                  }
+                                  style={styles.smallCounterButton}
+                                  activeOpacity={0.7}
+                                >
+                                  <IconSymbol
+                                    name="plus"
+                                    size={17}
+                                    color={Colors.dark.text}
+                                  />
+                                </TouchableOpacity>
+                              </View>
+                            </View>
+                          )}
                       </View>
                     </View>
                   ))}

@@ -248,6 +248,66 @@ export default function CharacterDetailsScreen() {
     updateCharacterInStorage(updated);
   };
 
+  const handleIncrementChi = () => {
+    if (!character || typeof character.chi !== 'number' || character.chi >= 3)
+      return;
+    const updated = {
+      ...character,
+      chi: Math.min(3, (character.chi ?? 0) + 1) as 0 | 1 | 2 | 3 | null,
+    };
+    updateCharacterInStorage(updated);
+  };
+
+  const handleDecrementChi = () => {
+    if (!character || typeof character.chi !== 'number') return;
+    const updated = {
+      ...character,
+      chi: Math.max(0, character.chi - 1) as 0 | 1 | 2 | 3 | null,
+    };
+    updateCharacterInStorage(updated);
+  };
+
+  const handleIncrementFavor = () => {
+    if (
+      !character ||
+      typeof character.favor !== 'number' ||
+      character.favor >= 3
+    )
+      return;
+    const updated = {
+      ...character,
+      favor: Math.min(3, (character.favor ?? 0) + 1) as
+        | 1
+        | 2
+        | 3
+        | 4
+        | 5
+        | 6
+        | 7
+        | 0
+        | null,
+    };
+    updateCharacterInStorage(updated);
+  };
+
+  const handleDecrementFavor = () => {
+    if (!character || typeof character.favor !== 'number') return;
+    const updated = {
+      ...character,
+      favor: Math.max(0, character.favor - 1) as
+        | 1
+        | 2
+        | 3
+        | 4
+        | 5
+        | 6
+        | 7
+        | 0
+        | null,
+    };
+    updateCharacterInStorage(updated);
+  };
+
   const handleIncrementHealth = () => {
     if (!character) return;
     const updated = {
@@ -505,7 +565,21 @@ export default function CharacterDetailsScreen() {
       }
 
       // Update the character with the new class
-      const updatedCharacter = { ...character, class: matchingClass };
+      const updatedCharacter = {
+        ...character,
+        class: matchingClass,
+        chi: (matchingClass.name === 'Monk' ? 0 : null) as 0 | 1 | 2 | 3 | null,
+        favor: (matchingClass.name === 'Cleric' ? 0 : null) as
+          | 1
+          | 2
+          | 3
+          | 4
+          | 5
+          | 6
+          | 7
+          | 0
+          | null,
+      };
       const updatedArray = charactersArray.map(char =>
         char.id === character.id ? updatedCharacter : char
       );
@@ -1347,6 +1421,84 @@ export default function CharacterDetailsScreen() {
                         </TouchableOpacity>
                       </View>
                     </View>
+
+                    {character.class.name === 'Monk' &&
+                      typeof character.chi === 'number' && (
+                        <View
+                          style={[
+                            styles.counterRow,
+                            isTablet && styles.counterRowTablet,
+                          ]}
+                        >
+                          <Text style={styles.counterLabel}>Chi: </Text>
+                          <View style={styles.counterControls}>
+                            <TouchableOpacity
+                              onPress={handleDecrementChi}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="minus"
+                                size={17}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
+                            <Text style={styles.counterValue}>
+                              {character.chi}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={handleIncrementChi}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="plus"
+                                size={17}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      )}
+
+                    {character.class.name === 'Cleric' &&
+                      typeof character.favor === 'number' && (
+                        <View
+                          style={[
+                            styles.counterRow,
+                            isTablet && styles.counterRowTablet,
+                          ]}
+                        >
+                          <Text style={styles.counterLabel}>Favor: </Text>
+                          <View style={styles.counterControls}>
+                            <TouchableOpacity
+                              onPress={handleDecrementFavor}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="minus"
+                                size={17}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
+                            <Text style={styles.counterValue}>
+                              {character.favor}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={handleIncrementFavor}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="plus"
+                                size={17}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      )}
                   </View>
                 </View>
 
@@ -1607,7 +1759,17 @@ export default function CharacterDetailsScreen() {
                                           .{' '}
                                         </Text>
                                       )}
-                                    {item.ability}
+                                    {item.ability &&
+                                    typeof item.ability === 'string' &&
+                                    'actionType' in item &&
+                                    item.actionType ? (
+                                      <Text>
+                                        {item.ability.charAt(0).toLowerCase() +
+                                          item.ability.slice(1)}
+                                      </Text>
+                                    ) : (
+                                      item.ability
+                                    )}
                                   </Text>
                                 )}
                                 <View style={styles.weaponOrShieldBottomRow}>
@@ -3086,7 +3248,9 @@ const styles = StyleSheet.create({
   counterRowTablet: {
     flex: 1,
     minWidth: '45%',
+    maxWidth: '48%',
     marginBottom: 0,
+    width: '48%',
   },
   counterLabel: {
     fontSize: 17,

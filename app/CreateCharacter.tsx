@@ -207,6 +207,8 @@ export default function CreateCharacterScreen() {
         weaponsAndShield: [],
         guildPerk: null,
         titles: [],
+        chi: selectedClass.name === 'Monk' ? 0 : null,
+        favor: selectedClass.name === 'Cleric' ? 0 : null,
       };
 
       // Add the new character to the array
