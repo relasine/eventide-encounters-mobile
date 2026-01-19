@@ -1759,17 +1759,8 @@ export default function CharacterDetailsScreen() {
                                           .{' '}
                                         </Text>
                                       )}
-                                    {item.ability &&
-                                    typeof item.ability === 'string' &&
-                                    'actionType' in item &&
-                                    item.actionType ? (
-                                      <Text>
-                                        {item.ability.charAt(0).toLowerCase() +
-                                          item.ability.slice(1)}
-                                      </Text>
-                                    ) : (
-                                      item.ability
-                                    )}
+
+                                    <Text>{item.ability}</Text>
                                   </Text>
                                 )}
                                 <View style={styles.weaponOrShieldBottomRow}>

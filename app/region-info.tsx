@@ -1,21 +1,33 @@
-import { View, StyleSheet, TouchableOpacity, Text, ScrollView, ActivityIndicator } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { useRegion } from '@/contexts/RegionContext';
 import { Colors } from '@/constants/theme';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Behemoth, Enemy, MasterBehemoth } from '@/constants/types';
+import {
+  Behemoth,
+  Enemy,
+  MasterBehemoth,
+  GenerateDungeonDescriptionType,
+} from '@/constants/types';
 import { API_KEY, API_URL } from '@/constants';
 
 type BestiaryResponse = {
-    bestiary: {
-        forsaken: Enemy[]
-        behemoth: Behemoth[]
-        horde: Enemy[]
-        masterBehemoth: MasterBehemoth
-    }
-}
+  bestiary: {
+    forsaken: Enemy[];
+    behemoth: Behemoth[];
+    horde: Enemy[];
+    masterBehemoth: MasterBehemoth;
+  };
+};
 
 const formatRegionName = (region: string): string => {
   return region.charAt(0).toUpperCase() + region.slice(1);
@@ -26,9 +38,14 @@ export default function RegionInfoScreen() {
   const { region } = useRegion();
   const colors = Colors.dark;
   const regionDisplayName = formatRegionName(region);
-  const [bestiaryResponse, setBestiaryResponse] = useState<BestiaryResponse | null>(null);
+  const [bestiaryResponse, setBestiaryResponse] =
+    useState<BestiaryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dungeonDescription, setDungeonDescription] =
+    useState<GenerateDungeonDescriptionType | null>(null);
+  const [dungeonLoading, setDungeonLoading] = useState(false);
+  const [dungeonError, setDungeonError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBestiary = async () => {
@@ -39,23 +56,28 @@ export default function RegionInfoScreen() {
         const response = await fetch(`${API_URL}/api/v1/bestiary/${region}`, {
           headers: {
             'x-api-key': API_KEY,
-            'Content-Type': 'application/json'
-          }
+            'Content-Type': 'application/json',
+          },
         });
-        
+
         if (!response.ok) {
-          throw new Error(`Failed to fetch bestiary: ${response.status} ${response.statusText}`);
+          throw new Error(
+            `Failed to fetch bestiary: ${response.status} ${response.statusText}`
+          );
         }
-        
+
         const data = await response.json();
-        
+
         if (!data) {
           throw new Error('Invalid response format from server');
         }
-        
+
         setBestiaryResponse(data);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'An unexpected error occurred';
         setError(errorMessage);
         console.error('Error fetching bestiary:', error);
       } finally {
@@ -65,6 +87,43 @@ export default function RegionInfoScreen() {
 
     fetchBestiary();
   }, [region]);
+
+  const handleGenerateDungeon = async () => {
+    setDungeonLoading(true);
+    setDungeonError(null);
+    try {
+      const response = await fetch(
+        `${API_URL}/api/v1/dungeon-description/${region}`,
+        {
+          headers: {
+            'x-api-key': API_KEY,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch dungeon description: ${response.status} ${response.statusText}`
+        );
+      }
+
+      const data = await response.json();
+
+      if (!data) {
+        throw new Error('Invalid response format from server');
+      }
+
+      setDungeonDescription(data);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'An unexpected error occurred';
+      setDungeonError(errorMessage);
+      console.error('Error fetching dungeon description:', error);
+    } finally {
+      setDungeonLoading(false);
+    }
+  };
 
   return (
     <LinearGradient
@@ -79,11 +138,7 @@ export default function RegionInfoScreen() {
           style={styles.backButton}
           activeOpacity={0.7}
         >
-          <IconSymbol
-            name="chevron.left"
-            size={24}
-            color={colors.text}
-          />
+          <IconSymbol name="chevron.left" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.title}>{regionDisplayName} Region Info</Text>
         <View style={styles.placeholder} />
@@ -94,6 +149,45 @@ export default function RegionInfoScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
+          {dungeonDescription && (
+            <View style={styles.dungeonDescriptionContainer}>
+              <Text style={styles.dungeonNameText}>
+                {dungeonDescription.dungeonDescription.lore.name}{' '}
+                {dungeonDescription.dungeonDescription.location.name}
+              </Text>
+              <Text style={styles.dungeonDescriptionText}>
+                {dungeonDescription.dungeonDescription.lore.description}{' '}
+                {dungeonDescription.dungeonDescription.location.description}
+              </Text>
+            </View>
+          )}
+
+          <TouchableOpacity
+            onPress={handleGenerateDungeon}
+            style={[
+              styles.generateButton,
+              (dungeonLoading || dungeonError) && styles.generateButtonDisabled,
+            ]}
+            disabled={dungeonLoading}
+            activeOpacity={0.7}
+          >
+            {dungeonLoading ? (
+              <>
+                <ActivityIndicator
+                  size="small"
+                  color={colors.text}
+                  style={styles.buttonLoader}
+                />
+                <Text style={styles.generateButtonText}>Generating...</Text>
+              </>
+            ) : dungeonError ? (
+              <Text style={styles.generateButtonText}>
+                Error: {dungeonError}
+              </Text>
+            ) : (
+              <Text style={styles.generateButtonText}>Generate Dungeon</Text>
+            )}
+          </TouchableOpacity>
           {isLoading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={colors.accent} />
@@ -107,7 +201,9 @@ export default function RegionInfoScreen() {
             </View>
           ) : bestiaryResponse ? (
             <View style={styles.bestiaryContainer}>
-              <Text style={styles.bestiaryTitle}>{regionDisplayName} Bestiary</Text>
+              <Text style={styles.bestiaryTitle}>
+                {regionDisplayName} Bestiary
+              </Text>
               {/* Forsaken Section */}
               {bestiaryResponse.bestiary.forsaken.length > 0 && (
                 <View style={styles.section}>
@@ -116,10 +212,12 @@ export default function RegionInfoScreen() {
                     <TouchableOpacity
                       key={index}
                       style={styles.item}
-                      onPress={() => router.push({
-                        pathname: '/bestiary-entry',
-                        params: { name: enemy.name, type: 'forsaken' }
-                      })}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/bestiary-entry',
+                          params: { name: enemy.name, type: 'forsaken' },
+                        })
+                      }
                       activeOpacity={0.7}
                     >
                       <Text style={styles.itemName}>{enemy.name}</Text>
@@ -137,10 +235,12 @@ export default function RegionInfoScreen() {
                     <TouchableOpacity
                       key={index}
                       style={styles.item}
-                      onPress={() => router.push({
-                        pathname: '/bestiary-entry',
-                        params: { name: enemy.name, type: 'horde' }
-                      })}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/bestiary-entry',
+                          params: { name: enemy.name, type: 'horde' },
+                        })
+                      }
                       activeOpacity={0.7}
                     >
                       <Text style={styles.itemName}>{enemy.name}</Text>
@@ -158,14 +258,18 @@ export default function RegionInfoScreen() {
                     <TouchableOpacity
                       key={index}
                       style={styles.item}
-                      onPress={() => router.push({
-                        pathname: '/bestiary-entry',
-                        params: { name: behemoth.name, type: 'behemoth' }
-                      })}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/bestiary-entry',
+                          params: { name: behemoth.name, type: 'behemoth' },
+                        })
+                      }
                       activeOpacity={0.7}
                     >
                       <Text style={styles.itemName}>{behemoth.name}</Text>
-                      <Text style={styles.itemLevel}>Level {behemoth.level}</Text>
+                      <Text style={styles.itemLevel}>
+                        Level {behemoth.level}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -177,14 +281,23 @@ export default function RegionInfoScreen() {
                   <Text style={styles.sectionTitle}>Master Behemoth</Text>
                   <TouchableOpacity
                     style={styles.item}
-                    onPress={() => router.push({
-                      pathname: '/bestiary-entry',
-                      params: { name: bestiaryResponse.bestiary.masterBehemoth.name, type: 'master-behemoth' }
-                    })}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/bestiary-entry',
+                        params: {
+                          name: bestiaryResponse.bestiary.masterBehemoth.name,
+                          type: 'master-behemoth',
+                        },
+                      })
+                    }
                     activeOpacity={0.7}
                   >
-                    <Text style={styles.itemName}>{bestiaryResponse.bestiary.masterBehemoth.name}</Text>
-                    <Text style={styles.itemLevel}>Level {bestiaryResponse.bestiary.masterBehemoth.level}</Text>
+                    <Text style={styles.itemName}>
+                      {bestiaryResponse.bestiary.masterBehemoth.name}
+                    </Text>
+                    <Text style={styles.itemLevel}>
+                      Level {bestiaryResponse.bestiary.masterBehemoth.level}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -327,5 +440,44 @@ const styles = StyleSheet.create({
     color: Colors.dark.textSecondary,
     fontWeight: '500',
   },
+  dungeonDescriptionContainer: {
+    marginBottom: 24,
+    padding: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  dungeonNameText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.dark.text,
+    marginBottom: 12,
+  },
+  dungeonDescriptionText: {
+    fontSize: 16,
+    color: Colors.dark.textSecondary,
+    lineHeight: 24,
+  },
+  generateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    backgroundColor: Colors.dark.accent,
+    borderRadius: 12,
+    marginBottom: 24,
+  },
+  generateButtonDisabled: {
+    opacity: 0.6,
+  },
+  generateButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.dark.text,
+  },
+  buttonLoader: {
+    marginRight: 8,
+  },
 });
-

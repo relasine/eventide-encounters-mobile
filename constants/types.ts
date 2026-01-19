@@ -275,3 +275,16 @@ export type ClassType = {
   classPassive: string;
   description: string;
 };
+
+export type GenerateDungeonDescriptionType = {
+  dungeonDescription: {
+    lore: {
+      name: string;
+      description: string;
+    };
+    location: {
+      name: string;
+      description: string;
+    };
+  };
+};
