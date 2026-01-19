@@ -1,4 +1,11 @@
-import { View, StyleSheet, TouchableOpacity, Text, ScrollView, ActivityIndicator } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
 
@@ -8,6 +15,7 @@ import { Horde } from '../../components/content/Horde';
 import { MasterBehemoth } from '@/components/content/MasterBehemoth';
 import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
+import { DefendRoll } from '@/components/DefendRoll';
 import { RollSelector } from '@/components/RollSelector';
 import { Colors } from '@/constants/theme';
 import { API_KEY, API_URL } from '@/constants';
@@ -27,33 +35,39 @@ export default function AltarScreen() {
     setAltarResponse(null);
     setError(null);
     try {
-      const response = await fetch(`${API_URL}/api/v1/altar/${region}/${rollModifier}`, {
-        headers: {
-          'x-api-key': API_KEY,
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        `${API_URL}/api/v1/altar/${region}/${rollModifier}`,
+        {
+          headers: {
+            'x-api-key': API_KEY,
+            'Content-Type': 'application/json',
+          },
         }
-      });
-      
+      );
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch altar response: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Failed to fetch altar response: ${response.status} ${response.statusText}`
+        );
       }
-      
+
       const data = await response.json();
-      
+
       if (!data || !data.altarResult) {
         throw new Error('Invalid response format from server');
       }
-      
+
       setAltarResponse(data.altarResult);
       setRollModifier(rollModifier + 1);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      const errorMessage =
+        error instanceof Error ? error.message : 'An unexpected error occurred';
       setError(errorMessage);
       console.error('Error generating altar response:', error);
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   const generateBehemoth = async () => {
     setIsLoading(true);
@@ -62,40 +76,43 @@ export default function AltarScreen() {
     try {
       const response = await fetch(`${API_URL}/api/v1/behemoth/${region}`, {
         headers: {
-          'x-api-key': API_KEY
-        }
+          'x-api-key': API_KEY,
+        },
       });
-      
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch behemoth: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Failed to fetch behemoth: ${response.status} ${response.statusText}`
+        );
       }
-      
+
       const data = await response.json();
-      
+
       if (!data || !data.altarResult) {
         throw new Error('Invalid response format from server');
       }
-      
+
       setAltarResponse(data.altarResult);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      const errorMessage =
+        error instanceof Error ? error.message : 'An unexpected error occurred';
       setError(errorMessage);
       console.error('Error generating behemoth:', error);
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   const decrementRollModifier = () => {
     if (rollModifier > 0) {
       setRollModifier(rollModifier - 1);
     }
-  }
+  };
 
   const incrementRollModifier = () => {
     setRollModifier(rollModifier + 1);
-  }
-  
+  };
+
   return (
     <LinearGradient
       colors={colors.backgroundGradient as [string, string, ...string[]]}
@@ -103,17 +120,19 @@ export default function AltarScreen() {
       end={{ x: 1, y: 1 }}
       style={styles.container}
     >
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          isTablet && styles.scrollContentTablet
+          isTablet && styles.scrollContentTablet,
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[
-          styles.contentWrapper,
-          isTablet && styles.contentWrapperTablet
-        ]}>
+        <View
+          style={[
+            styles.contentWrapper,
+            isTablet && styles.contentWrapperTablet,
+          ]}
+        >
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <View style={styles.regionButtonWrapper}>
@@ -122,19 +141,29 @@ export default function AltarScreen() {
               <View style={styles.modifierContainer}>
                 <Text style={styles.modifierLabel}>Modifier</Text>
                 <View style={styles.modifierControls}>
-                  <TouchableOpacity 
-                    disabled={rollModifier <= 0} 
-                    style={[styles.modifierButton, rollModifier <= 0 && styles.modifierButtonDisabled]} 
+                  <TouchableOpacity
+                    disabled={rollModifier <= 0}
+                    style={[
+                      styles.modifierButton,
+                      rollModifier <= 0 && styles.modifierButtonDisabled,
+                    ]}
                     onPress={decrementRollModifier}
                     onLongPress={() => setRollModifier(0)}
                   >
-                    <Text style={[styles.modifierButtonText, rollModifier <= 0 && styles.modifierButtonTextDisabled]}>−</Text>
+                    <Text
+                      style={[
+                        styles.modifierButtonText,
+                        rollModifier <= 0 && styles.modifierButtonTextDisabled,
+                      ]}
+                    >
+                      −
+                    </Text>
                   </TouchableOpacity>
                   <View style={styles.modifierValue}>
                     <Text style={styles.modifierValueText}>{rollModifier}</Text>
                   </View>
-                  <TouchableOpacity 
-                    style={styles.modifierButton} 
+                  <TouchableOpacity
+                    style={styles.modifierButton}
                     onPress={incrementRollModifier}
                   >
                     <Text style={styles.modifierButtonText}>+</Text>
@@ -142,84 +171,96 @@ export default function AltarScreen() {
                 </View>
               </View>
             </View>
-            <View style={styles.rollButtonWrapper}>
+            <View
+              style={[
+                styles.rollButtonWrapper,
+                !isTablet && styles.rollButtonWrapperMobile,
+              ]}
+            >
+              {isTablet && <DefendRoll />}
               <RollSelector />
             </View>
           </View>
           {isLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.accent} />
-            <Text style={styles.loadingText}>Rolling altar...</Text>
-          </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorIcon}>⚠️</Text>
-            <Text style={styles.errorTitle}>Error</Text>
-            <Text style={styles.errorText}>{error}</Text>
-            <TouchableOpacity 
-              style={styles.retryButton}
-              onPress={generateAltarResponse}
-            >
-              <Text style={styles.retryButtonText}>Try Again</Text>
-            </TouchableOpacity>
-          </View>
-        ) : altarResponse ? (
-          <View style={styles.responseContainer}>
-            {altarResponse.result !== 'Master Behemoth' && (
-              <View style={styles.responseCard}>
-                <Text style={styles.responseLabel}>Altar Response</Text>
-                <Text style={styles.responseResult}>{altarResponse.result}</Text>
-                <Text style={styles.responseAction}>{altarResponse.altarAction}</Text>
-              </View>
-            )}
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.accent} />
+              <Text style={styles.loadingText}>Rolling altar...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorIcon}>⚠️</Text>
+              <Text style={styles.errorTitle}>Error</Text>
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={generateAltarResponse}
+              >
+                <Text style={styles.retryButtonText}>Try Again</Text>
+              </TouchableOpacity>
+            </View>
+          ) : altarResponse ? (
+            <View style={styles.responseContainer}>
+              {altarResponse.result !== 'Master Behemoth' && (
+                <View style={styles.responseCard}>
+                  <Text style={styles.responseLabel}>Altar Response</Text>
+                  <Text style={styles.responseResult}>
+                    {altarResponse.result}
+                  </Text>
+                  <Text style={styles.responseAction}>
+                    {altarResponse.altarAction}
+                  </Text>
+                </View>
+              )}
 
-            {(altarResponse.result === 'Ambush' && altarResponse.ambush) && (
-              <View style={styles.encounterSection}>
-                <Text style={styles.sectionTitle}>Ambush Result</Text>
-                <Horde encounter={altarResponse.ambush} isAltar />
-              </View>
-            )}
+              {altarResponse.result === 'Ambush' && altarResponse.ambush && (
+                <View style={styles.encounterSection}>
+                  <Text style={styles.sectionTitle}>Ambush Result</Text>
+                  <Horde encounter={altarResponse.ambush} isAltar />
+                </View>
+              )}
 
-            {(altarResponse.result === 'Behemoth' && altarResponse.behemoth) && (
-              <View style={styles.encounterSection}>
-                <Text style={styles.sectionTitle}>Behemoth Result</Text>
-                <Behemoth encounter={altarResponse.behemoth} isAltar />
-              </View>
-            )}
+              {altarResponse.result === 'Behemoth' &&
+                altarResponse.behemoth && (
+                  <View style={styles.encounterSection}>
+                    <Text style={styles.sectionTitle}>Behemoth Result</Text>
+                    <Behemoth encounter={altarResponse.behemoth} isAltar />
+                  </View>
+                )}
 
-            {(altarResponse.result === 'Peril' && altarResponse.peril) && (
-              <View style={styles.encounterSection}>
-                <Text style={styles.sectionTitle}>Peril Result</Text>
-                <Peril encounter={altarResponse.peril} />
-              </View>
-            )}
+              {altarResponse.result === 'Peril' && altarResponse.peril && (
+                <View style={styles.encounterSection}>
+                  <Text style={styles.sectionTitle}>Peril Result</Text>
+                  <Peril encounter={altarResponse.peril} />
+                </View>
+              )}
 
-            {(altarResponse.result === 'Master Behemoth' && altarResponse.masterBehemoth) && (
-              <MasterBehemoth encounter={altarResponse.masterBehemoth} generateBehemoth={generateBehemoth} />
-            )}
+              {altarResponse.result === 'Master Behemoth' &&
+                altarResponse.masterBehemoth && (
+                  <MasterBehemoth
+                    encounter={altarResponse.masterBehemoth}
+                    generateBehemoth={generateBehemoth}
+                  />
+                )}
 
-            {altarResponse.reward && (
-              <View style={styles.rewardCard}>
-                <Text style={styles.rewardLabel}>Reward</Text>
-                <Text style={styles.rewardValue}>{altarResponse.reward}</Text>
-              </View>
-            )}
-          </View>
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateTitle}>Roll the Altar</Text>
-            <Text style={styles.emptyStateText}>
-              Use the button below to generate an altar response
-            </Text>
-          </View>
-        )}
+              {altarResponse.reward && (
+                <View style={styles.rewardCard}>
+                  <Text style={styles.rewardLabel}>Reward</Text>
+                  <Text style={styles.rewardValue}>{altarResponse.reward}</Text>
+                </View>
+              )}
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateTitle}>Roll the Altar</Text>
+              <Text style={styles.emptyStateText}>
+                Use the button below to generate an altar response
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 
-      <View style={[
-        styles.footer,
-        isTablet && styles.footerTablet
-      ]}>
+      <View style={[styles.footer, isTablet && styles.footerTablet]}>
         <View style={styles.buttonRow}>
           <LinearGradient
             colors={colors.accentGradient as [string, string, ...string[]]}
@@ -227,8 +268,11 @@ export default function AltarScreen() {
             end={{ x: 1, y: 0 }}
             style={styles.buttonGradient}
           >
-            <TouchableOpacity 
-              style={[styles.primaryButton, isLoading && styles.primaryButtonDisabled]} 
+            <TouchableOpacity
+              style={[
+                styles.primaryButton,
+                isLoading && styles.primaryButtonDisabled,
+              ]}
               onPress={generateAltarResponse}
               activeOpacity={0.9}
               disabled={isLoading}
@@ -281,8 +325,13 @@ const styles = StyleSheet.create({
     marginBottom: -16,
   },
   rollButtonWrapper: {
+    flexDirection: 'row',
+    gap: 12,
     alignItems: 'flex-start',
     marginBottom: -16,
+  },
+  rollButtonWrapperMobile: {
+    flexDirection: 'column',
   },
   modifierContainer: {
     alignItems: 'flex-start',

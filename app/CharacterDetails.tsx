@@ -5,7 +5,6 @@ import {
   Text,
   ScrollView,
   ActivityIndicator,
-  TextInput,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -19,13 +18,14 @@ import BottomSheet, {
 } from '@gorhom/bottom-sheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRegion } from '@/contexts/RegionContext';
-import { RegionSelector } from '@/components/RegionSelector';
+import { DefendRoll } from '@/components/DefendRoll';
 import { RollSelector } from '@/components/RollSelector';
 import { Colors } from '@/constants/theme';
 import { useResponsive } from '@/hooks/use-responsive';
-import { Character, ClassType, Weapon, Title } from '@/constants/types';
+import { Character, ClassType, Weapon, Title, Region } from '@/constants/types';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { API_KEY, API_URL } from '@/constants';
+import { statuses } from '@/constants/statuses';
 
 export default function CharacterDetailsScreen() {
   const router = useRouter();
@@ -588,37 +588,39 @@ export default function CharacterDetailsScreen() {
     setStatusInput('');
   }, []);
 
-  const handleAddStatus = useCallback(async () => {
-    if (!character || !statusInput.trim()) return;
+  const handleAddStatus = useCallback(
+    async (statusOverride?: string) => {
+      const statusToAdd = statusOverride || statusInput.trim();
+      if (!character || !statusToAdd) return;
 
-    const trimmedStatus = statusInput.trim();
-    if (trimmedStatus.length === 0 || trimmedStatus.length > 20) return;
+      const trimmedStatus = statusToAdd.trim();
+      if (trimmedStatus.length === 0) return;
 
-    const currentStatuses = character.statuses || [];
+      // Only check length limit if not using override (manual input)
+      if (!statusOverride && trimmedStatus.length > 20) return;
 
-    // Check if status already exists
-    if (currentStatuses.includes(trimmedStatus)) {
-      closeStatusBottomSheet();
-      return;
-    }
+      const currentStatuses = character.statuses || [];
 
-    try {
-      const updatedCharacter = {
-        ...character,
-        statuses: [...currentStatuses, trimmedStatus],
-      };
-      await updateCharacterInStorage(updatedCharacter);
-      closeStatusBottomSheet();
-    } catch (error) {
-      console.error('Error adding status:', error);
-      setError('Failed to add status');
-    }
-  }, [
-    character,
-    statusInput,
-    updateCharacterInStorage,
-    closeStatusBottomSheet,
-  ]);
+      // Check if status already exists
+      if (currentStatuses.includes(trimmedStatus)) {
+        closeStatusBottomSheet();
+        return;
+      }
+
+      try {
+        const updatedCharacter = {
+          ...character,
+          statuses: [...currentStatuses, trimmedStatus],
+        };
+        await updateCharacterInStorage(updatedCharacter);
+        closeStatusBottomSheet();
+      } catch (error) {
+        console.error('Error adding status:', error);
+        setError('Failed to add status');
+      }
+    },
+    [character, statusInput, updateCharacterInStorage, closeStatusBottomSheet]
+  );
 
   const handleRemoveStatus = useCallback(
     async (statusToRemove: string) => {
@@ -1045,8 +1047,10 @@ export default function CharacterDetailsScreen() {
           ]}
         >
           <View style={styles.headerSection}>
-            <RegionSelector />
-            <RollSelector />
+            <View style={styles.rollButtonsContainer}>
+              <DefendRoll />
+              <RollSelector />
+            </View>
           </View>
 
           {character && (
@@ -1589,8 +1593,20 @@ export default function CharacterDetailsScreen() {
                                       )}
                                     {'abilityName' in item &&
                                       item.abilityName &&
-                                      item.ability &&
+                                      (item.ability || 'actionType' in item) &&
                                       ' - '}
+                                    {'actionType' in item &&
+                                      item.actionType &&
+                                      typeof item.actionType === 'string' && (
+                                        <Text>
+                                          Spend a{' '}
+                                          {item.actionType
+                                            .charAt(0)
+                                            .toUpperCase() +
+                                            item.actionType.slice(1)}
+                                          .{' '}
+                                        </Text>
+                                      )}
                                     {item.ability}
                                   </Text>
                                 )}
@@ -2529,8 +2545,46 @@ export default function CharacterDetailsScreen() {
               {statusInput.length >= 20 && (
                 <Text style={styles.statusInputError}>Limit 20 characters</Text>
               )}
+
+              {/* Status Pills */}
+              {(() => {
+                // Convert lowercase region to capitalized to match statuses
+                const regionCapitalized = (region.charAt(0).toUpperCase() +
+                  region.slice(1)) as Region;
+                const matchingStatuses = statuses.filter(status =>
+                  status.regions.includes(regionCapitalized)
+                );
+
+                if (matchingStatuses.length === 0) return null;
+
+                return (
+                  <View style={styles.statusPillsContainer}>
+                    <View style={styles.statusPillsRow}>
+                      {matchingStatuses.map((status, index) => (
+                        <TouchableOpacity
+                          key={index}
+                          style={styles.statusQuickSelectPill}
+                          activeOpacity={0.7}
+                          onPress={() => {
+                            const statusText = status.effect
+                              ? `${status.name} - ${status.effect}`
+                              : status.name;
+                            setStatusInput(statusText);
+                            handleAddStatus(statusText);
+                          }}
+                        >
+                          <Text style={styles.statusQuickSelectPillText}>
+                            {status.name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                );
+              })()}
+
               <TouchableOpacity
-                onPress={handleAddStatus}
+                onPress={() => handleAddStatus()}
                 style={[
                   styles.addStatusSubmitButton,
                   (!statusInput.trim() || statusInput.trim().length > 20) &&
@@ -2849,8 +2903,16 @@ const styles = StyleSheet.create({
   headerSection: {
     marginBottom: 24,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'flex-start',
+  },
+  rollButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  rollButtonsContainerMobile: {
+    flexDirection: 'column',
   },
   titleSection: {
     marginBottom: 24,
@@ -3321,6 +3383,29 @@ const styles = StyleSheet.create({
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  statusPillsContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 8,
+  },
+  statusPillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  statusQuickSelectPill: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: Colors.dark.backgroundTertiary,
+    borderWidth: 1,
+    borderColor: Colors.dark.border,
+  },
+  statusQuickSelectPillText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: Colors.dark.text,
   },
   statusInputContainer: {
     paddingHorizontal: 24,

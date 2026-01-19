@@ -15,7 +15,7 @@ import BottomSheet, {
 } from '@gorhom/bottom-sheet';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRegion } from '@/contexts/RegionContext';
-import { RegionSelector } from '@/components/RegionSelector';
+import { DefendRoll } from '@/components/DefendRoll';
 import { RollSelector } from '@/components/RollSelector';
 import { Colors } from '@/constants/theme';
 import { useResponsive } from '@/hooks/use-responsive';
@@ -381,8 +381,10 @@ export default function PartyScreen() {
           ]}
         >
           <View style={styles.header}>
-            <RegionSelector />
-            <RollSelector />
+            <View style={styles.rollButtonsContainer}>
+              <DefendRoll />
+              <RollSelector />
+            </View>
           </View>
           <View style={styles.content}>
             {characters.length === 0 ? (
@@ -444,193 +446,206 @@ export default function PartyScreen() {
                           </Text>
                         </View>
 
-                        <TouchableOpacity
-                          style={styles.characterDetailRow}
-                          onPress={() => openPositionBottomSheet(character)}
-                          activeOpacity={0.7}
-                        >
-                          <Text style={styles.characterLabel}>Position: </Text>
-                          <Text style={styles.characterValue}>
-                            {character.position !== null
-                              ? character.position
-                              : 'N/A'}
-                          </Text>
-                        </TouchableOpacity>
-
-                        <View style={styles.statusRow}>
-                          {character.statuses &&
-                          character.statuses.length > 0 ? (
-                            <TouchableOpacity
-                              onLongPress={() =>
-                                openClearStatusesBottomSheet(character)
-                              }
-                              activeOpacity={0.7}
-                              style={styles.statusLabelContainer}
-                            >
-                              <Text style={styles.characterLabel}>
-                                Status:{' '}
-                              </Text>
-                            </TouchableOpacity>
-                          ) : (
-                            <Text style={styles.characterLabel}>Status: </Text>
-                          )}
-                          {character.statuses &&
-                          character.statuses.length > 0 ? (
-                            <View style={styles.statusesContainer}>
-                              {character.statuses.map((status, index) => (
-                                <View key={index} style={styles.statusPill}>
-                                  <Text style={styles.statusPillText}>
-                                    {status}
-                                  </Text>
-                                </View>
-                              ))}
-                            </View>
-                          ) : (
-                            <Text style={styles.characterValue}>None</Text>
-                          )}
+                        <View style={styles.positionLevelRow}>
+                          <View style={styles.characterDetailRow}>
+                            <Text style={styles.characterLabel}>Level: </Text>
+                            <Text style={styles.characterValue}>
+                              {character.level}
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            style={styles.characterDetailRow}
+                            onPress={() => openPositionBottomSheet(character)}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.characterLabel}>
+                              Position:{' '}
+                            </Text>
+                            <Text style={styles.characterValue}>
+                              {character.position !== null
+                                ? character.position
+                                : 'N/A'}
+                            </Text>
+                          </TouchableOpacity>
                         </View>
 
-                        <View style={styles.counterSection}>
-                          <View style={styles.counterRow}>
+                        <View style={styles.attackDefenseRow}>
+                          <View style={styles.characterDetailRow}>
+                            <Text style={styles.characterLabel}>ATK: </Text>
+                            <Text style={styles.characterValue}>
+                              {character.attack}
+                            </Text>
+                          </View>
+                          <View style={styles.characterDetailRow}>
+                            <Text style={styles.characterLabel}>DEF: </Text>
+                            <Text style={styles.characterValue}>
+                              {character.defense}
+                            </Text>
+                          </View>
+                        </View>
+
+                        {character.statuses &&
+                          character.statuses.length > 0 && (
+                            <View style={styles.statusRow}>
+                              <TouchableOpacity
+                                onLongPress={() =>
+                                  openClearStatusesBottomSheet(character)
+                                }
+                                activeOpacity={0.7}
+                                style={styles.statusLabelContainer}
+                              >
+                                <Text style={styles.characterLabel}>
+                                  Status:{' '}
+                                </Text>
+                              </TouchableOpacity>
+                              <View style={styles.statusesContainer}>
+                                {character.statuses.map((status, index) => (
+                                  <View key={index} style={styles.statusPill}>
+                                    <Text style={styles.statusPillText}>
+                                      {status}
+                                    </Text>
+                                  </View>
+                                ))}
+                              </View>
+                            </View>
+                          )}
+                      </View>
+
+                      <View style={styles.counterSection}>
+                        <View style={styles.counterRow}>
+                          <TouchableOpacity
+                            onLongPress={() =>
+                              openMaxHealthBottomSheet(character)
+                            }
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.counterLabel}>Health: </Text>
+                          </TouchableOpacity>
+                          <View style={styles.counterControls}>
                             <TouchableOpacity
-                              onLongPress={() =>
-                                openMaxHealthBottomSheet(character)
-                              }
+                              onPress={() => handleDecrementHealth(character)}
+                              style={styles.smallCounterButton}
                               activeOpacity={0.7}
                             >
-                              <Text style={styles.counterLabel}>Health: </Text>
+                              <IconSymbol
+                                name="minus"
+                                size={17}
+                                color={Colors.dark.text}
+                              />
                             </TouchableOpacity>
-                            <View style={styles.counterControls}>
-                              <TouchableOpacity
-                                onPress={() => handleDecrementHealth(character)}
-                                style={styles.smallCounterButton}
-                                activeOpacity={0.7}
-                              >
-                                <IconSymbol
-                                  name="minus"
-                                  size={17}
-                                  color={Colors.dark.text}
-                                />
-                              </TouchableOpacity>
-                              <Text style={styles.counterValue}>
-                                {character.currentHealth} /{' '}
-                                {character.maxHealth}
-                              </Text>
-                              <TouchableOpacity
-                                onPress={() => handleIncrementHealth(character)}
-                                style={styles.smallCounterButton}
-                                activeOpacity={0.7}
-                              >
-                                <IconSymbol
-                                  name="plus"
-                                  size={17}
-                                  color={Colors.dark.text}
-                                />
-                              </TouchableOpacity>
-                            </View>
+                            <Text style={styles.counterValue}>
+                              {character.currentHealth} / {character.maxHealth}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={() => handleIncrementHealth(character)}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="plus"
+                                size={17}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
                           </View>
+                        </View>
 
-                          <View style={styles.counterRow}>
-                            <Text style={styles.counterLabel}>Surges: </Text>
-                            <View style={styles.counterControls}>
-                              <TouchableOpacity
-                                onPress={() => handleDecrementSurges(character)}
-                                style={styles.smallCounterButton}
-                                activeOpacity={0.7}
-                              >
-                                <IconSymbol
-                                  name="minus"
-                                  size={17}
-                                  color={Colors.dark.text}
-                                />
-                              </TouchableOpacity>
-                              <Text style={styles.counterValue}>
-                                {character.surges !== null
-                                  ? character.surges
-                                  : 'N/A'}
-                              </Text>
-                              <TouchableOpacity
-                                onPress={() => handleIncrementSurges(character)}
-                                style={styles.smallCounterButton}
-                                activeOpacity={0.7}
-                              >
-                                <IconSymbol
-                                  name="plus"
-                                  size={17}
-                                  color={Colors.dark.text}
-                                />
-                              </TouchableOpacity>
-                            </View>
+                        <View style={styles.counterRow}>
+                          <Text style={styles.counterLabel}>Surges: </Text>
+                          <View style={styles.counterControls}>
+                            <TouchableOpacity
+                              onPress={() => handleDecrementSurges(character)}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="minus"
+                                size={17}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
+                            <Text style={styles.counterValue}>
+                              {character.surges !== null
+                                ? character.surges
+                                : 'N/A'}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={() => handleIncrementSurges(character)}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="plus"
+                                size={17}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
                           </View>
+                        </View>
 
-                          <View style={styles.counterRow}>
-                            <Text style={styles.counterLabel}>Glowstone: </Text>
-                            <View style={styles.counterControls}>
-                              <TouchableOpacity
-                                onPress={() =>
-                                  handleDecrementGlowstone(character)
-                                }
-                                style={styles.smallCounterButton}
-                                activeOpacity={0.7}
-                              >
-                                <IconSymbol
-                                  name="minus"
-                                  size={17}
-                                  color={Colors.dark.text}
-                                />
-                              </TouchableOpacity>
-                              <Text style={styles.counterValue}>
-                                {character.glowstone}
-                              </Text>
-                              <TouchableOpacity
-                                onPress={() =>
-                                  handleIncrementGlowstone(character)
-                                }
-                                style={styles.smallCounterButton}
-                                activeOpacity={0.7}
-                              >
-                                <IconSymbol
-                                  name="plus"
-                                  size={17}
-                                  color={Colors.dark.text}
-                                />
-                              </TouchableOpacity>
-                            </View>
+                        <View style={styles.counterRow}>
+                          <Text style={styles.counterLabel}>Glowstone: </Text>
+                          <View style={styles.counterControls}>
+                            <TouchableOpacity
+                              onPress={() =>
+                                handleDecrementGlowstone(character)
+                              }
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="minus"
+                                size={17}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
+                            <Text style={styles.counterValue}>
+                              {character.glowstone}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={() =>
+                                handleIncrementGlowstone(character)
+                              }
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="plus"
+                                size={17}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
                           </View>
+                        </View>
 
-                          <View style={styles.counterRow}>
-                            <Text style={styles.counterLabel}>Essence: </Text>
-                            <View style={styles.counterControls}>
-                              <TouchableOpacity
-                                onPress={() =>
-                                  handleDecrementEssence(character)
-                                }
-                                style={styles.smallCounterButton}
-                                activeOpacity={0.7}
-                              >
-                                <IconSymbol
-                                  name="minus"
-                                  size={17}
-                                  color={Colors.dark.text}
-                                />
-                              </TouchableOpacity>
-                              <Text style={styles.counterValue}>
-                                {character.essence}
-                              </Text>
-                              <TouchableOpacity
-                                onPress={() =>
-                                  handleIncrementEssence(character)
-                                }
-                                style={styles.smallCounterButton}
-                                activeOpacity={0.7}
-                              >
-                                <IconSymbol
-                                  name="plus"
-                                  size={17}
-                                  color={Colors.dark.text}
-                                />
-                              </TouchableOpacity>
-                            </View>
+                        <View style={styles.counterRow}>
+                          <Text style={styles.counterLabel}>Essence: </Text>
+                          <View style={styles.counterControls}>
+                            <TouchableOpacity
+                              onPress={() => handleDecrementEssence(character)}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="minus"
+                                size={17}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
+                            <Text style={styles.counterValue}>
+                              {character.essence}
+                            </Text>
+                            <TouchableOpacity
+                              onPress={() => handleIncrementEssence(character)}
+                              style={styles.smallCounterButton}
+                              activeOpacity={0.7}
+                            >
+                              <IconSymbol
+                                name="plus"
+                                size={17}
+                                color={Colors.dark.text}
+                              />
+                            </TouchableOpacity>
                           </View>
                         </View>
                       </View>
@@ -871,8 +886,16 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 24,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'flex-start',
+  },
+  rollButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  rollButtonsContainerMobile: {
+    flexDirection: 'column',
   },
   clearAllStatusesContainer: {
     marginVertical: 16,
@@ -971,6 +994,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.1)',
     marginBottom: 16,
     width: '100%',
+    flexDirection: 'column',
   },
   characterCardTablet: {
     width: '48%',
@@ -995,11 +1019,23 @@ const styles = StyleSheet.create({
   },
   characterDetails: {
     gap: 12,
+    flex: 1,
   },
   characterDetailRow: {
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'center',
+  },
+  positionLevelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  attackDefenseRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 24,
   },
   characterLabel: {
     fontSize: 16,
@@ -1017,8 +1053,9 @@ const styles = StyleSheet.create({
     color: Colors.dark.text,
   },
   counterSection: {
-    marginTop: 12,
+    marginTop: 'auto',
     gap: 12,
+    paddingTop: 16,
   },
   counterRow: {
     flexDirection: 'row',

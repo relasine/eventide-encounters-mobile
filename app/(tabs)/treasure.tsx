@@ -15,6 +15,7 @@ import BottomSheet, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRegion } from '@/contexts/RegionContext';
 import { RegionSelector } from '@/components/RegionSelector';
+import { DefendRoll } from '@/components/DefendRoll';
 import { RollSelector } from '@/components/RollSelector';
 import { Colors } from '@/constants/theme';
 import { API_KEY, API_URL } from '@/constants';
@@ -311,7 +312,15 @@ export default function TreasureScreen() {
         >
           <View style={styles.header}>
             <RegionSelector />
-            <RollSelector />
+            <View
+              style={[
+                styles.rollButtonsContainer,
+                !isTablet && styles.rollButtonsContainerMobile,
+              ]}
+            >
+              {isTablet && <DefendRoll />}
+              <RollSelector />
+            </View>
           </View>
 
           {isLoading ? (
@@ -535,6 +544,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+  },
+  rollButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  rollButtonsContainerMobile: {
+    flexDirection: 'column',
   },
   title: {
     fontSize: 32,
